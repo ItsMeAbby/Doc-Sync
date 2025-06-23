@@ -1,55 +1,30 @@
 from uuid import UUID
+from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+from fastapi import APIRouter, HTTPException
 
-from app.database import User, get_async_session
-from app.models import Item
-from app.schemas import ItemRead, ItemCreate
-from app.users import current_active_user
+from app.database import items_db
+from app.models import Item, ItemCreate, ItemRead
 
 router = APIRouter(tags=["item"])
 
 
-@router.get("/", response_model=list[ItemRead])
-async def read_item(
-    db: AsyncSession = Depends(get_async_session),
-    user: User = Depends(current_active_user),
-):
-    result = await db.execute(select(Item).filter(Item.user_id == user.id))
-    items = result.scalars().all()
-    return [ItemRead.model_validate(item) for item in items]
+@router.get("/", response_model=List[ItemRead])
+async def read_items():
+    return list(items_db.values())
 
 
 @router.post("/", response_model=ItemRead)
-async def create_item(
-    item: ItemCreate,
-    db: AsyncSession = Depends(get_async_session),
-    user: User = Depends(current_active_user),
-):
-    db_item = Item(**item.model_dump(), user_id=user.id)
-    db.add(db_item)
-    await db.commit()
-    await db.refresh(db_item)
-    return db_item
+async def create_item(item: ItemCreate):
+    new_item = Item(**item.model_dump())
+    items_db[new_item.id] = new_item
+    return new_item
 
 
 @router.delete("/{item_id}")
-async def delete_item(
-    item_id: UUID,
-    db: AsyncSession = Depends(get_async_session),
-    user: User = Depends(current_active_user),
-):
-    result = await db.execute(
-        select(Item).filter(Item.id == item_id, Item.user_id == user.id)
-    )
-    item = result.scalars().first()
-
-    if not item:
-        raise HTTPException(status_code=404, detail="Item not found or not authorized")
-
-    await db.delete(item)
-    await db.commit()
-
+async def delete_item(item_id: UUID):
+    if item_id not in items_db:
+        raise HTTPException(status_code=404, detail="Item not found")
+    
+    del items_db[item_id]
     return {"message": "Item successfully deleted"}
