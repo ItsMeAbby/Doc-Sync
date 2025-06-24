@@ -38,5 +38,5 @@ def remove_operation_id_tag(schema):
     return schema
 
 
-if __name__ == "__main__":
-    generate_openapi_schema(OUTPUT_FILE)
+# if __name__ == "__main__":
+    # generate_openapi_schema(OUTPUT_FILE)
