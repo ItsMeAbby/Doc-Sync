@@ -209,7 +209,7 @@ async def get_root_documents():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-`ß
+
 @router.get("/")
 async def get_all_documents(
     is_deleted: Optional[bool] = Query(False),
