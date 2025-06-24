@@ -25,6 +25,30 @@ def build_tree(documents: List[dict]) -> List[dict]:
     
     return root_nodes
 
+def clean_markdown_content(content: str) -> str:
+    """
+    Clean markdown content by removing unnecessary whitespace and newlines.
+    This helps in better processing and embedding generation.
+    """
+    if not content:
+        return ""
+    
+
+    # rplece "|     |     |\n| --- | --- |\n|" with "\n"\ use exact match no regex
+    content = content.replace("|     |     |\n| --- | --- |\n|", "\n")
+    content = content.replace("| ```", "\n```")
+    content = content.replace("``` |", "```\n")
+    # find using regex ```<br> random text <br>``` |,  bar is also included
+    content = re.sub(r'```<br>.*?<br>```', '', content)
+    code_block_pattern = r'```[\s\S]*?```'
+    # replace <br> with \n in code blocks
+    content = re.sub(code_block_pattern, lambda m: m.group(0).replace('<br>', '\n'), content)
+    # Remove leading and trailing whitespace
+    content = content.strip()
+
+    
+    return content
+
 def detect_language(text: str) -> str:
     """
     Detect the language of the given text.

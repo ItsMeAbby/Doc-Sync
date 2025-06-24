@@ -35,12 +35,12 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   };
 
   return (
-    <div className="flex items-center space-x-2">
-      <label htmlFor="language-select" className="text-sm font-medium">
+    <div className="flex items-center space-x-2 w-full sm:w-auto">
+      <label htmlFor="language-select" className="text-sm font-medium hidden sm:inline">
         Language:
       </label>
       <Select value={selectedLanguage} onValueChange={handleValueChange}>
-        <SelectTrigger id="language-select" className="w-[180px]">
+        <SelectTrigger id="language-select" className="w-full sm:w-[180px]">
           <SelectValue placeholder="Select language" />
         </SelectTrigger>
         <SelectContent>

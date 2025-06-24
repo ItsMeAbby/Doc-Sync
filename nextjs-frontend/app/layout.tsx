@@ -30,15 +30,15 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen flex flex-col`}>
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="container mx-auto px-4 py-3">
-            <nav className="flex items-center justify-between">
+          <div className="container mx-auto px-2 sm:px-4 py-3">
+            <nav className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
               <Link href="/" className="flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
                 <span className="bg-blue-100 dark:bg-blue-900 p-1 rounded">
                   <FaBook className="w-5 h-5 text-blue-600 dark:text-blue-300" />
                 </span>
                 Doc-Sync
               </Link>
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4 sm:gap-6">
                 <Link href="/" className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
                   <FaHome className="w-4 h-4" />
                   Home
@@ -55,7 +55,7 @@ export default function RootLayout({
           {children}
         </main>
         <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-4">
-          <div className="container mx-auto px-4 text-center text-sm text-gray-600 dark:text-gray-400">
+          <div className="container mx-auto px-2 sm:px-4 text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             &copy; {new Date().getFullYear()} Doc-Sync - AI-Powered Documentation Updates
           </div>
         </footer>

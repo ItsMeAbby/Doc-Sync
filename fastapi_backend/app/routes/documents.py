@@ -13,7 +13,7 @@ from app.models.documents import (
     DocumentContentCreate,
     DocumentContentRead,
 )
-from app.services.content_processor import build_tree, process_document_content
+from app.services.content_processor import build_tree, process_document_content, clean_markdown_content
 from app.config import settings
 
 router = APIRouter(tags=["documents"])
@@ -69,6 +69,18 @@ async def create_document(document: DocumentCreate, content: Optional[DocumentCo
         
         # Return the created document (with version_id if content was provided)
         return {**new_doc, "current_version_id": version_id}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+@router.get("/root", response_model=List[DocumentRead])
+async def get_root_documents():
+    """Get all root-level documents (no parent)"""
+    try:
+        print("Fetching root documents...")
+        result = supabase.table("documents").select("*").is_("parent_id", None).eq("is_deleted", False).is_("current_version_id", None).execute()
+        print(f"Root documents found: {len(result.data)}")
+        return result.data
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
@@ -197,17 +209,6 @@ async def get_document_parents(doc_id: str):
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
-# @router.get("/root", response_model=List[DocumentRead])
-async def get_root_documents():
-    """Get all root-level documents (no parent)"""
-    try:
-        print("Fetching root documents...")
-        result = supabase.table("documents").select("*").is_("parent_id", None).eq("is_deleted", False).execute()
-        print(f"Root documents found: {len(result.data)}")
-        return result.data
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
 @router.get("/",response_model=GetAllDocumentsResponse)
@@ -238,7 +239,7 @@ async def get_all_documents(
         for doc in all_docs:
             if "document_contents" in doc:
                 content = doc.get("document_contents") or {}
-                doc["markdown_content"] = content.get("markdown_content", "")
+                doc["markdown_content"] = clean_markdown_content(content.get("markdown_content", ""))
                 doc["language"] = content.get("language")
                 doc["keywords_array"] = content.get("keywords_array", [])
                 del doc["document_contents"]

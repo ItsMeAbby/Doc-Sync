@@ -5,16 +5,16 @@ import { Card } from "@/components/ui/card";
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-8">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
       <div className="text-center max-w-3xl">
-        <h1 className="text-5xl font-bold text-gray-800 dark:text-white mb-6">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-800 dark:text-white mb-4 sm:mb-6">
           Doc-Sync
         </h1>
-        <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
+        <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6 sm:mb-8">
           Keep your documentation up-to-date with AI-powered suggestions
         </p>
 
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8">
+        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md mb-6 sm:mb-8">
           <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">How it works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="p-4 flex flex-col items-center">
@@ -43,7 +43,7 @@ export default function Home() {
 
         {/* Link to Documentation */}
         <Link href="/documentation">
-          <Button className="px-8 py-4 text-xl font-semibold rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 focus:ring-4 focus:ring-blue-300">
+          <Button className="px-6 sm:px-8 py-3 sm:py-4 text-lg sm:text-xl font-semibold rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 focus:ring-4 focus:ring-blue-300">
             View Documentation
           </Button>
         </Link>

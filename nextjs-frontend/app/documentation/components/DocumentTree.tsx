@@ -3,11 +3,14 @@
 import React, { useState } from 'react';
 import { ChevronRight, ChevronDown, File, Folder, Search } from 'lucide-react';
 import { DocumentNode } from '../types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
 
 interface DocumentTreeProps {
   documents: DocumentNode[];
   onSelectDocument: (document: DocumentNode) => void;
   selectedDocument: DocumentNode | null;
+  isLoading?: boolean;
 }
 
 const DocumentTreeNode: React.FC<{
@@ -46,7 +49,7 @@ const DocumentTreeNode: React.FC<{
   return (
     <div className="select-none">
       <div 
-        className={`flex items-center py-1 px-2 rounded-md ${
+        className={`flex items-center py-1.5 sm:py-1 px-2 rounded-md text-sm sm:text-base ${
           hasChildren 
             ? 'cursor-default' 
             : 'cursor-pointer ' + (isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')
@@ -88,12 +91,12 @@ const DocumentTreeNode: React.FC<{
   );
 };
 
-const DocumentTree: React.FC<DocumentTreeProps> = ({ documents, onSelectDocument, selectedDocument }) => {
+const DocumentTree: React.FC<DocumentTreeProps> = ({ documents, onSelectDocument, selectedDocument, isLoading = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   return (
     <div className="flex flex-col h-full">
-      <div className="relative mb-3">
+      <div className="relative mb-3 sticky top-0 z-10 bg-background">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Search className="h-4 w-4 text-gray-400" />
         </div>
@@ -106,8 +109,21 @@ const DocumentTree: React.FC<DocumentTreeProps> = ({ documents, onSelectDocument
         />
       </div>
       
-      <div className="max-h-[calc(100vh-250px)] overflow-y-auto">
-        {documents.length > 0 ? (
+      <div className="max-h-[calc(100vh-250px)] sm:max-h-[calc(100vh-200px)] overflow-y-auto pb-2 -mx-1 px-1">
+        {isLoading ? (
+          <div className="space-y-2 p-2">
+            <div className="flex items-center space-x-2 mb-3">
+              <Spinner size="sm" />
+              <span className="text-sm text-gray-500">Loading documents...</span>
+            </div>
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-11/12 ml-4" />
+            <Skeleton className="h-6 w-10/12 ml-4" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-11/12 ml-4" />
+            <Skeleton className="h-6 w-10/12 ml-4" />
+          </div>
+        ) : documents.length > 0 ? (
           documents.map((doc) => (
             <DocumentTreeNode
               key={doc.id}
