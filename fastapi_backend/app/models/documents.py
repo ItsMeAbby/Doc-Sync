@@ -1,4 +1,3 @@
-
 from typing import List, Optional, TYPE_CHECKING
 from datetime import datetime
 from pydantic import BaseModel, Field
@@ -56,6 +55,32 @@ class DocumentContentRead(DocumentContentBase):
 
 
 
-class DocumentTree(BaseModel):
-    documentation: Optional[List[dict]] = None
-    api_references: Optional[List[dict]] = None
+class DocumentWithContent(DocumentRead):
+    """Extended document model that includes content fields"""
+    markdown_content: str = ""
+    language: Optional[str] = None
+    keywords_array: List[str] = []
+    children: List['DocumentWithContent'] = []
+
+    class Config:
+        from_attributes = True
+
+
+class LanguageDocumentation(BaseModel):
+    """Model for language-specific documentation collection"""
+    documentation: List[DocumentWithContent] =[]
+    api_references: List[DocumentWithContent] = []
+
+    class Config:
+        from_attributes = True
+
+
+class GetAllDocumentsResponse(BaseModel):
+    """Response model for the get all documents API endpoint"""
+    en: Optional[LanguageDocumentation] = None
+    ja: Optional[LanguageDocumentation] = None  # Japanese documentation if available
+    
+    class Config:
+        from_attributes = True
+
+DocumentWithContent.model_rebuild()

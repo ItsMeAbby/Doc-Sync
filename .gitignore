@@ -158,3 +158,4 @@ documentation_openai_sdk/
 fastapi_backend/prompt.txt
 fastapi_backend/data_preprocess.py
 test.json
+CLAUDE.md

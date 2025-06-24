@@ -8,7 +8,7 @@ from app.supabase import supabase
 from app.models.documents import (
     DocumentCreate,
     DocumentRead,
-    DocumentTree,
+    GetAllDocumentsResponse,
     DocumentUpdate,
     DocumentContentCreate,
     DocumentContentRead,
@@ -210,12 +210,12 @@ async def get_root_documents():
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
-@router.get("/")
+@router.get("/",response_model=GetAllDocumentsResponse)
 async def get_all_documents(
     is_deleted: Optional[bool] = Query(False),
     is_api_ref: Optional[bool] = None,
     parent_id: Optional[str] = None
-)-> dict:
+)-> GetAllDocumentsResponse:
     """Get all documents with complete hierarchy (with optional filters) and its content"""
     try:
         # First, let's build the base query with proper join
