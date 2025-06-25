@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FaBook, FaLightbulb, FaEdit } from "react-icons/fa";
+import { FaBook, FaLightbulb, FaEdit, FaPlus } from "react-icons/fa";
 import { Card } from "@/components/ui/card";
 
 export default function Home() {
@@ -42,11 +42,19 @@ export default function Home() {
         </div>
 
         {/* Link to Documentation */}
-        <Link href="/documentation">
-          <Button className="px-6 sm:px-8 py-3 sm:py-4 text-lg sm:text-xl font-semibold rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 focus:ring-4 focus:ring-blue-300">
-            View Documentation
-          </Button>
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link href="/documentation">
+            <Button className="px-6 sm:px-8 py-3 sm:py-4 text-lg sm:text-xl font-semibold rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 focus:ring-4 focus:ring-blue-300">
+              View Documentation
+            </Button>
+          </Link>
+          <Link href="/create-document">
+            <Button className="px-6 sm:px-8 py-3 sm:py-4 text-lg sm:text-xl font-semibold rounded-full shadow-lg bg-gradient-to-r from-green-500 to-teal-500 text-white hover:from-green-600 hover:to-teal-600 focus:ring-4 focus:ring-green-300">
+              <FaPlus className="mr-2" />
+              Create Document
+            </Button>
+          </Link>
+        </div>
       </div>
     </main>
   );
