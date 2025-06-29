@@ -74,11 +74,11 @@ async def create_document(document: DocumentCreate, content: Optional[DocumentCo
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 @router.get("/root", response_model=List[DocumentRead])
-async def get_root_documents():
+async def get_root_documents(is_api_ref: Optional[bool] = True):
     """Get all root-level documents (no parent)"""
     try:
         print("Fetching root documents...")
-        result = supabase.table("documents").select("*").is_("parent_id", None).eq("is_deleted", False).is_("current_version_id", None).execute()
+        result = supabase.table("documents").select("*").is_("parent_id", None).eq("is_deleted", False).is_("current_version_id", None).is_("is_api_ref",is_api_ref).execute()
         print(f"Root documents found: {len(result.data)}")
         return result.data
     
