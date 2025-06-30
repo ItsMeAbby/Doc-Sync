@@ -30,8 +30,6 @@ class DocumentEdit(BaseModel):
     """Users should provide a list of changes to be made in the document."""
     version: str
     """The version of the document to be edited."""
-    is_api_ref: bool = False
-    """Indicates if the document is an API reference document."""
 class Edits(BaseModel):
     """
     Represents a collection of edits to be made to multiple documents.
