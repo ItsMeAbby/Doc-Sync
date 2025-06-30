@@ -7,7 +7,9 @@ from typing_extensions import Literal
 from app.services.openai_service import create_embedding
 from app.supabase import supabase
 import asyncio
-from agents import function_tool
+from agents import function_tool, Agent
+
+from app.config import settings
 class Document(BaseModel):
     id: str
     title: Optional[str]
@@ -20,6 +22,7 @@ class Document(BaseModel):
     keywords_array: Optional[List[str]]
     urls_array: Optional[List[str]]
     is_api_ref: bool
+
 
 class SimilarDocumentsResponse(BaseModel):
     documents: Optional[List[Document]]
@@ -133,8 +136,6 @@ async def get_all_document_summaries(
         )
     response= query.execute()
     raw_docs = response.data
-    print(f"Retrieved {len(raw_docs)} documents from the database.")
-    print(f"Documents: {raw_docs}")
     documents = []
     for doc in raw_docs:
         content = doc.get("document_contents",{})
@@ -198,7 +199,8 @@ async def get_document_by_version(
                     summary,
                     language,
                     keywords_array,
-                    urls_array
+                    urls_array,
+                    markdown_content
                 )
             """)
             .eq("id", document_id)
@@ -217,7 +219,7 @@ async def get_document_by_version(
         id=doc["id"],
         title=doc.get("title"),
         version=content.get("version", ""),
-        markdown_content=doc.get("markdown_content", ""),
+        markdown_content=content.get("markdown_content", ""),
         summary=content.get("summary", ""),
         similarity=None,  # No similarity score for specific document retrieval
         path=doc.get("path", ""),

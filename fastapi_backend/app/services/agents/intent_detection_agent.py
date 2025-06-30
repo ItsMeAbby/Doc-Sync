@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from agents import Agent
 
 from app.services.prompts import INTENT_PROMPT
-
+from app.config import settings
 # based on user query, you identify what typemof edir user wants to do
 #  doe suser want to create a new document, delete a document, or edit an existing one, or move a document
 class Intent_Item(BaseModel):
@@ -22,6 +22,6 @@ class Detected_Intent(BaseModel):
 intent_agent=Agent(
     name="IntentDetectionAgent",
     instructions=INTENT_PROMPT,
-    model="gpt-4.1",
+    model=settings.OPENAI_MODEL,
     output_type=Detected_Intent
 )
