@@ -57,7 +57,6 @@ In addition, we’ve introduced a new hypothetical method called `client.authent
 * `agent_id` *(str)*: The unique identifier of the agent requiring session-based access.
 * `session_token` *(str)*: A temporary or refreshable token used to authenticate the agent for the current session.
 * `expires_in` *(int, optional)*: Time in seconds until the session expires (default is 3600 seconds).
-* `scopes` *(list\[str], optional)*: A list of permission scopes granted during the session (e.g., `["read", "write"]`).
 
 This method ensures that each agent can securely assume session-based roles when accessing external systems or APIs without embedding long-lived credentials, improving security and access control across distributed applications.
 """

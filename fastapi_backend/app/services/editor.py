@@ -1,17 +1,20 @@
 from app.services.agents.edit_suggestion_agent import EditAgentResponse, edit_suggestion_agent
-from app.services.agents.editor_agent import edit_content_agent, Edits
+from app.services.agents.editor_agent import DocumentEdit, edit_content_agent, Edits
 from app.services.agents.intent_detection_agent import Detected_Intent, intent_agent
-from app.services.agents.create_content_agent import CreateContentResponse, create_content_agent
+from app.services.agents.create_content_agent import CreateContentResponse, GeneratedDocument, create_content_agent
 import json
 import asyncio
 
 from agents import Runner
+
+from app.models.edit_documentation import EditDocumentationResponse
 class MainEditor:
     def __init__(self, query: str):
         self.query = query
-        self.output_chnages={}
+        self.edit_changes: list[DocumentEdit] = []
+        self.create_documents: list[GeneratedDocument] = []
 
-    async def run(self):
+    async def run(self)->EditDocumentationResponse:
         """
         Run the agent to get the response based on the query.
         """
@@ -49,16 +52,16 @@ class MainEditor:
                         else:
                             try:
                                 documents_edits = result.final_output_as(Edits)
-                                changes = documents_edits.model_dump().get("changes", [])
+                                changes = documents_edits.changes
                                 all_changes.extend(changes)
                                 print(f"Processed suggestion {i}: {len(changes)} document(s)")
                             except Exception as e:
                                 print(f"Error parsing result for suggestion {i}: {str(e)}")
                     
-                    self.output_chnages["edit"] = all_changes
+                    self.edit_changes.extend(all_changes)
                     print(f"Total edit changes collected: {len(all_changes)}")
                 else:
-                    self.output_chnages["edit"] = []
+                    pass  # edit_changes already initialized as empty list
             
             elif intent.intent == "create":
                 # If the intent is to create, run the create content agent directly
@@ -70,14 +73,16 @@ class MainEditor:
                 print(created_documents.model_dump_json(indent=2))
                 
                 # Add the generated documents to the output
-                dict_created_documents = created_documents.model_dump()
-                self.output_chnages["create"] = dict_created_documents
+                self.create_documents.extend(created_documents.documents)
 
 
 
-
+        
             
-        return self.output_chnages
+        return EditDocumentationResponse(
+            edit=self.edit_changes,
+            create=self.create_documents
+        )
 
         
         
