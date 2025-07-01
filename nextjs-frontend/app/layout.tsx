@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 import Link from "next/link";
-import { FaBook, FaHome } from "react-icons/fa";
+import { FaBook, FaHome, FaPlus, FaLightbulb } from "react-icons/fa";
 
 export default function RootLayout({
   children,
@@ -38,14 +38,23 @@ export default function RootLayout({
                 </span>
                 Doc-Sync
               </Link>
-              <div className="flex items-center gap-4 sm:gap-6">
-                <Link href="/" className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
-                  <FaHome className="w-4 h-4" />
-                  Home
+              <div className="flex items-center gap-2 sm:gap-4">
+                <Link href="/" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                  <FaHome className="w-3 sm:w-4 h-3 sm:h-4" />
+                  <span className="hidden sm:inline">Home</span>
                 </Link>
-                <Link href="/documentation" className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
-                  <FaBook className="w-4 h-4" />
-                  Documentation
+                <Link href="/documentation" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+                  <FaBook className="w-3 sm:w-4 h-3 sm:h-4" />
+                  <span className="hidden sm:inline">Documentation</span>
+                </Link>
+                <div className="h-4 w-px bg-gray-300 dark:bg-gray-600"></div>
+                <Link href="/create-document" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors">
+                  <FaPlus className="w-3 sm:w-4 h-3 sm:h-4" />
+                  Create
+                </Link>
+                <Link href="/documentation-change" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors">
+                  <FaLightbulb className="w-3 sm:w-4 h-3 sm:h-4" />
+                  Change
                 </Link>
               </div>
             </nav>

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { documentCache } from '@/app/utils/documentCache';
 
 interface ParentDocument {
   id: string;
@@ -20,6 +21,7 @@ interface ParentDocument {
 export default function CreateDocumentPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [activeTab, setActiveTab] = useState<'parent' | 'document'>('parent');
   const [parentDocuments, setParentDocuments] = useState<ParentDocument[]>([]);
   const [loadingParents, setLoadingParents] = useState(true);
@@ -82,7 +84,16 @@ export default function CreateDocumentPage() {
       });
 
       if (response.ok) {
-        router.push('/documentation');
+        // Invalidate cache to force refresh on documentation page
+        documentCache.invalidate('documents_all');
+        
+        // Show redirecting state
+        setIsRedirecting(true);
+        
+        // Wait 1.5 seconds before redirecting for smooth transition
+        setTimeout(() => {
+          router.push('/documentation');
+        }, 1500);
       } else {
         const errorData = await response.json();
         alert(`Error: ${errorData.detail || 'Failed to create parent document'}`);
@@ -138,7 +149,16 @@ export default function CreateDocumentPage() {
       });
 
       if (response.ok) {
-        router.push('/documentation');
+        // Invalidate cache to force refresh on documentation page
+        documentCache.invalidate('documents_all');
+        
+        // Show redirecting state
+        setIsRedirecting(true);
+        
+        // Wait 1.5 seconds before redirecting for smooth transition
+        setTimeout(() => {
+          router.push('/documentation');
+        }, 1500);
       } else {
         const errorData = await response.json();
         alert(`Error creating document: ${errorData.detail || 'Failed to create document'}`);
@@ -152,7 +172,20 @@ export default function CreateDocumentPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 relative">
+      {/* Redirecting overlay */}
+      {isRedirecting && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+          <Card className="p-6 sm:p-8 flex flex-col items-center space-y-4">
+            <Spinner size="lg" />
+            <h2 className="text-xl sm:text-2xl font-semibold">Success!</h2>
+            <p className="text-gray-600 dark:text-gray-400 text-center">
+              Document created successfully. Redirecting to documentation...
+            </p>
+          </Card>
+        </div>
+      )}
+      
       <h1 className="text-2xl font-bold mb-6">Create New Documentation</h1>
       
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'parent' | 'document')}>
