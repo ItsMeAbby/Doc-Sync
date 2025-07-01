@@ -31,3 +31,10 @@ export interface EditDocumentationRequest {
   query: string;
   document_id?: string;
 }
+export interface OriginalContent {
+  markdown_content: string;
+  language?: string;
+  name?: string;
+  title?: string;
+  path?: string;
+}

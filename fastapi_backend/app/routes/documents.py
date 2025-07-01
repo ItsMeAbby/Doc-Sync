@@ -119,40 +119,35 @@ async def get_document_version(doc_id: str, version_id: str):
     try:
         if version_id.lower() == "latest":
             # Get the document to find current_version_id
-            doc_result = supabase.table("documents").select("current_version_id").eq("id", str(doc_id)).execute()
-            
-            if not doc_result.data:
-                raise HTTPException(status_code=404, detail="Document not found")
-            
-            version_id = doc_result.data[0]["current_version_id"]
-            
-            if not version_id:
-                raise HTTPException(status_code=404, detail="No versions found for this document")
+            doc_result = supabase.table("documents").select("*").eq("id", str(doc_id)).execute()
+        else:
+            doc_result = supabase.table("documents").select("*").eq("id", str(doc_id)).eq("current_version_id", version_id).execute()
+        if not doc_result.data:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        version_id = doc_result.data[0].get("current_version_id")
+        name= doc_result.data[0].get("name")
+        title= doc_result.data[0].get("title")
+        path= doc_result.data[0].get("path")
+        
+        if not version_id:
+            raise HTTPException(status_code=404, detail="No versions found for this document")
         
         result = supabase.table("document_contents").select("*").eq("document_id", str(doc_id)).eq("version", version_id).execute()
         
         if not result.data:
             raise HTTPException(status_code=404, detail="Version not found")
         
+        result.data[0]["name"] = name
+        result.data[0]["title"] = title
+        result.data[0]["path"] = path
+        
+        
         return result.data[0]
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-
-@router.get("/{doc_id}/versions/previous", response_model=DocumentContentRead)
-async def get_previous_document_version(doc_id: str):
-    """Get the second-latest version"""
-    try:
-        result = supabase.table("document_contents").select("*").eq("document_id", str(doc_id)).order("created_at", desc=True).limit(2).execute()
-        
-        if not result.data or len(result.data) < 2:
-            raise HTTPException(status_code=404, detail="No previous version found")
-        
-        return result.data[1]  # Return the second item (previous version)
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
 @router.get("/{parent_id}/children", response_model=List[DocumentRead])

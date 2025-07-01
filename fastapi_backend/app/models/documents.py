@@ -52,6 +52,11 @@ class DocumentContentRead(DocumentContentBase):
     document_id: str
     created_at: datetime
     updated_at: datetime
+    name: Optional[str] = None  
+    path: Optional[str] = None  
+    title: Optional[str] = None
+
+
 
 
 

@@ -10,8 +10,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { fetchDocumentsWithCache } from '@/app/utils/documentCache';
 import { ChangeTypeFilter, ChangeType } from '@/components/ChangeTypeFilter';
 import { DocumentChangeCard } from '@/components/DocumentChangeCard';
-import { ApplyChangesModal } from '@/components/ApplyChangesModal';
-import type { EditDocumentationResponse, DocumentEdit, GeneratedDocument } from '@/lib/edit-types';
+import type { EditDocumentationResponse, DocumentEdit, GeneratedDocument, OriginalContent } from '@/lib/edit-types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function DocumentationChangePage() {
@@ -26,9 +25,8 @@ export default function DocumentationChangePage() {
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<ChangeType>('all');
   const [selectedChanges, setSelectedChanges] = useState<Set<string>>(new Set());
-  const [showApplyModal, setShowApplyModal] = useState(false);
   const [applyingChanges, setApplyingChanges] = useState(false);
-  const [documentContents, setDocumentContents] = useState<Map<string, string>>(new Map());
+  const [documentContents, setDocumentContents] = useState<Map<string, OriginalContent>>(new Map());
 
   useEffect(() => {
     const queryParam = searchParams.get('query');
@@ -215,13 +213,20 @@ export default function DocumentationChangePage() {
       
       // Fetch original content for edit changes
       if (data.edit && data.edit.length > 0) {
-        const contentMap = new Map<string, string>();
+        const contentMap = new Map<string, OriginalContent>();
         for (const edit of data.edit) {
           try {
             const docRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents/${edit.document_id}/versions/${edit.version}`);
             if (docRes.ok) {
               const docData = await docRes.json();
-              contentMap.set(edit.document_id, docData.markdown_content);
+              const originalContent: OriginalContent = {
+                  markdown_content: docData.markdown_content,
+                  language: docData.language,
+                  name: docData.name,
+                  title: docData.title,
+                  path: docData.path
+              }
+              contentMap.set(edit.document_id, originalContent);
             }
           } catch (err) {
             console.error(`Failed to fetch content for document ${edit.document_id}:`, err);
@@ -289,7 +294,11 @@ export default function DocumentationChangePage() {
 
   const handleApplySelected = () => {
     if (changesToApply.length > 0) {
-      setShowApplyModal(true);
+      const documentCount = changesToApply.length;
+      const confirmed = window.confirm(`Do you want to proceed? This will affect ${documentCount} document${documentCount !== 1 ? 's' : ''}.`);
+      if (confirmed) {
+        handleConfirmApply();
+      }
     }
   };
 
@@ -300,7 +309,12 @@ export default function DocumentationChangePage() {
       return isEdit ? (change as DocumentEdit).document_id : `create-${index}`;
     });
     setSelectedChanges(new Set(allIds));
-    setShowApplyModal(true);
+    
+    const documentCount = filteredChanges.length;
+    const confirmed = window.confirm(`Do you want to proceed? This will affect ${documentCount} document${documentCount !== 1 ? 's' : ''}.`);
+    if (confirmed) {
+      handleConfirmApply();
+    }
   };
 
   const handleIgnoreSelected = () => {
@@ -385,7 +399,6 @@ export default function DocumentationChangePage() {
       
       // Remove applied changes from response
       handleIgnoreSelected();
-      setShowApplyModal(false);
     } catch (err) {
       console.error('Failed to apply changes:', err);
       alert('Failed to apply changes');
@@ -523,8 +536,11 @@ export default function DocumentationChangePage() {
               {filteredChanges.map((change, index) => {
                 const isEdit = 'changes' in change;
                 const changeId = isEdit ? (change as DocumentEdit).document_id : `create-${index}`;
-                const originalContent = isEdit ? documentContents.get((change as DocumentEdit).document_id) || '' : '';
-                
+                const originalContentDict = isEdit ? documentContents.get((change as DocumentEdit).document_id) || {
+                  markdown_content: ''
+                }: {
+                  markdown_content: ''
+                };
                 return (
                   <DocumentChangeCard
                     key={changeId}
@@ -534,7 +550,7 @@ export default function DocumentationChangePage() {
                     onSelectionChange={(selected) => handleSelectionChange(changeId, selected)}
                     onApply={() => handleApplySingle(change, isEdit ? 'edit' : 'create')}
                     onIgnore={() => handleIgnoreSingle(changeId)}
-                    originalContent={originalContent}
+                    originalContent={originalContentDict}
                     disabled={applyingChanges}
                   />
                 );
@@ -549,15 +565,6 @@ export default function DocumentationChangePage() {
           </ScrollArea>
         </Card>
       )}
-      
-      <ApplyChangesModal
-        isOpen={showApplyModal}
-        onClose={() => setShowApplyModal(false)}
-        onConfirm={handleConfirmApply}
-        changes={changesToApply}
-        changeType={getChangeType()}
-        isLoading={applyingChanges}
-      />
     </div>
   );
 }

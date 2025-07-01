@@ -20,7 +20,7 @@ import {
   Folder
 } from "lucide-react";
 import { DiffViewer } from "./DiffViewer";
-import type { DocumentEdit, GeneratedDocument, ContentChange } from "@/lib/edit-types";
+import type { DocumentEdit, GeneratedDocument, ContentChange, OriginalContent } from "@/lib/edit-types";
 
 interface DocumentChangeCardProps {
   change: DocumentEdit | GeneratedDocument;
@@ -29,7 +29,7 @@ interface DocumentChangeCardProps {
   onSelectionChange: (selected: boolean) => void;
   onApply: () => void;
   onIgnore: () => void;
-  originalContent?: string;
+  originalContent: OriginalContent;
   disabled?: boolean;
 }
 
@@ -40,7 +40,7 @@ export function DocumentChangeCard({
   onSelectionChange,
   onApply,
   onIgnore,
-  originalContent = "",
+  originalContent,
   disabled = false,
 }: DocumentChangeCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -52,14 +52,16 @@ export function DocumentChangeCard({
 
   const getTitle = () => {
     if (isEdit) {
-      return `Edit: ${editChange.document_id}`;
+      console.log("Edit Change:", editChange);
+      console.log("Original Content:", originalContent);
+      return `Edit: ${originalContent?.title || originalContent?.name || editChange.document_id}`;
     }
     return `Create: ${createChange.title}`;
   };
 
   const getPath = () => {
     if (isEdit) {
-      return editChange.document_id;
+      return originalContent?.path || editChange.document_id;
     }
     return createChange.path;
   };
@@ -72,6 +74,13 @@ export function DocumentChangeCard({
   };
 
   const applyChangesToContent = (content: string, changes: ContentChange[]) => {
+    console.log("Applying changes to content:", content, changes);
+    
+    // Handle undefined or empty content
+    if (!content) {
+      return '';
+    }
+    
     let modifiedContent = content;
     
     // Apply changes in reverse order to avoid index shifting
@@ -181,8 +190,8 @@ export function DocumentChangeCard({
               {isEdit ? (
                 <div className="max-h-96 overflow-y-auto">
                   <DiffViewer
-                    oldContent={originalContent}
-                    newContent={applyChangesToContent(originalContent, editChange.changes)}
+                    oldContent={originalContent?.markdown_content || ''}
+                    newContent={applyChangesToContent(originalContent?.markdown_content || '', editChange.changes)}
                     viewMode={viewMode}
                     className="p-4"
                   />
