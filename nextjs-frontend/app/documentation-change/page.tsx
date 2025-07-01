@@ -7,6 +7,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { ArrowLeft, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { fetchDocumentsWithCache } from '@/app/utils/documentCache';
 
 export default function DocumentationChangePage() {
   const searchParams = useSearchParams();
@@ -34,13 +35,7 @@ export default function DocumentationChangePage() {
   const fetchDocumentDetails = async (docId: string) => {
     try {
       setLoadingDoc(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents/`);
-      
-      if (!res.ok) {
-        throw new Error('Failed to fetch documents');
-      }
-
-      const data = await res.json();
+      const data = await fetchDocumentsWithCache(process.env.NEXT_PUBLIC_API_BASE_URL || '');
       
       // Search for the document in all languages and categories
       let foundDoc = null;

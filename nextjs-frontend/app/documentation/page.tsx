@@ -12,6 +12,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { useRouter } from 'next/navigation';
 import { FaLightbulb } from 'react-icons/fa';
+import { RefreshCw } from 'lucide-react';
+import { fetchDocumentsWithCache, documentCache } from '@/app/utils/documentCache';
 
 export default function DocumentationPage() {
   const router = useRouter();
@@ -26,11 +28,8 @@ export default function DocumentationPage() {
     const fetchDocuments = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents/`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          setDocuments(data);
+        const data = await fetchDocumentsWithCache(process.env.NEXT_PUBLIC_API_BASE_URL || '');
+        setDocuments(data);
           
           // Check for stored selection from documentation-change page
           const storedDocId = sessionStorage.getItem('selectedDocumentId');
@@ -77,20 +76,6 @@ export default function DocumentationPage() {
               setSelectedLanguage(languages[0]);
             }
           }
-        } else {
-          const errorMessage = `Failed to fetch documents: ${response.status} ${response.statusText}`;
-          console.error(errorMessage);
-          console.error(`API URL: ${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents`);
-          // For debugging purposes - log the response body if possible
-          try {
-            const errorText = await response.text();
-            console.error('Error response:', errorText);
-            setError(errorMessage + '. Please check that the backend server is running.');
-          } catch (e) {
-            console.error('Could not read error response body');
-            setError(errorMessage + '. Please check that the backend server is running.');
-          }
-        }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error('Error fetching documents:', error);
@@ -112,6 +97,21 @@ export default function DocumentationPage() {
     setSelectedDocument(null);
   };
 
+  const handleRefresh = async () => {
+    // Clear cache and refetch
+    documentCache.invalidate('documents_all');
+    setLoading(true);
+    try {
+      const data = await fetchDocumentsWithCache(process.env.NEXT_PUBLIC_API_BASE_URL || '');
+      setDocuments(data);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Failed to refresh: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-2 sm:px-4 py-4">
       <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -121,13 +121,24 @@ export default function DocumentationPage() {
           onLanguageChange={handleLanguageChange}
         />
         
-        <Button
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500"
-          onClick={() => router.push('/documentation-change')}
-        >
-          <FaLightbulb className="h-4 w-4" />
-          Suggest Documentation Update
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={loading}
+            title="Refresh documents"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500"
+            onClick={() => router.push('/documentation-change')}
+          >
+            <FaLightbulb className="h-4 w-4" />
+            Suggest Documentation Update
+          </Button>
+        </div>
       </div>
 
       {error ? (
@@ -143,11 +154,7 @@ export default function DocumentationPage() {
               setError(null);
               setLoading(true);
               // Retry the fetch
-              fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents/`)
-                .then(response => {
-                  if (response.ok) return response.json();
-                  throw new Error(`Failed to fetch: ${response.status}`);
-                })
+              fetchDocumentsWithCache(process.env.NEXT_PUBLIC_API_BASE_URL || '')
                 .then(data => {
                   setDocuments(data);
                   setLoading(false);
