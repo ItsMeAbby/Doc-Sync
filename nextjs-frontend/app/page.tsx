@@ -54,6 +54,12 @@ export default function Home() {
               Create Document
             </Button>
           </Link>
+          <Link href="/documentation-change">
+            <Button className="px-6 sm:px-8 py-3 sm:py-4 text-lg sm:text-xl font-semibold rounded-full shadow-lg bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 focus:ring-4 focus:ring-orange-300">
+              <FaLightbulb className="mr-2" />
+              Suggest Changes
+            </Button>
+          </Link>
         </div>
       </div>
     </main>

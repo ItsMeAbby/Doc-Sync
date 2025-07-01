@@ -7,6 +7,7 @@ import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
+import { useRouter } from 'next/navigation';
 
 interface MarkdownRendererProps {
   content: string;
@@ -16,6 +17,7 @@ interface MarkdownRendererProps {
 }
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, documentId, keywords_array = [], isLoading = false }) => {
+  const router = useRouter();
   if (isLoading) {
     return (
       <div className="space-y-4 p-4">
@@ -61,7 +63,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, documentId
         <div className="flex justify-end">
           <button 
             className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-            onClick={() => alert('This would open the documentation update form for document ID: ' + documentId)}
+            onClick={() => router.push(`/documentation-change${documentId ? `?documentId=${encodeURIComponent(documentId)}` : ''}`)}
           >
             Suggest Update
           </button>
