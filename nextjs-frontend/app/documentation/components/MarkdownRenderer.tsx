@@ -1,23 +1,29 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
+import { Button } from '@/components/ui/button';
+import { Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { DocumentNode } from '@/app/documentation/types';
+import VersionHistoryModal from './VersionHistoryModal';
 
 interface MarkdownRendererProps {
   content: string;
   documentId?: string;
   keywords_array?: string[];
   isLoading?: boolean;
+  document?: DocumentNode;
 }
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, documentId, keywords_array = [], isLoading = false }) => {
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, documentId, keywords_array = [], isLoading = false, document }) => {
   const router = useRouter();
+  const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   if (isLoading) {
     return (
       <div className="space-y-4 p-4">
@@ -60,7 +66,18 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, documentId
             ))
           ) : null}
         </div>
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          {document && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsVersionModalOpen(true)}
+              className="inline-flex items-center gap-2"
+            >
+              <Clock className="h-4 w-4" />
+              Version History
+            </Button>
+          )}
           <button 
             className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
             onClick={() => router.push(`/documentation-change${documentId ? `?documentId=${encodeURIComponent(documentId)}` : ''}`)}
@@ -79,6 +96,15 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, documentId
           {content}
         </ReactMarkdown>
       </div>
+
+      {/* Version History Modal */}
+      {document && (
+        <VersionHistoryModal
+          document={document}
+          isOpen={isVersionModalOpen}
+          onClose={() => setIsVersionModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

@@ -258,6 +258,7 @@ export default function DocumentationPage() {
                   documentId={selectedDocument.id}
                   keywords_array={selectedDocument.keywords_array}
                   isLoading={loading}
+                  document={selectedDocument}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">
