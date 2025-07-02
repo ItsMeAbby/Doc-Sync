@@ -10,15 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      # Backend env vars
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      FRONTEND_URL: "http://localhost:3000"
       CORS_ORIGINS: '["*"]'
-      OPENAI_MODEL: "gpt-4.1"
-      OPENAI_EMBEDDING_MODEL: "text-embedding-3-large"
+      OPENAPI_URL: "/openapi.json"
+      VECTOR_DIMENSION: "1536"
       LANGUAGES: '["en", "ja"]'
+      # Frontend env vars
       API_BASE_URL: "http://localhost:8000"
-      OPENAPI_OUTPUT_FILE: "../local-shared-data/openapi.json"
+      NEXT_PUBLIC_API_BASE_URL: "http://localhost:8000"
+      OPENAPI_OUTPUT_FILE: "openapi.json"
 
 
     steps:
