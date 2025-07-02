@@ -7,7 +7,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { ArrowLeft, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { fetchDocumentsWithCache } from '@/app/utils/documentCache';
+import { fetchDocumentsWithCache, invalidateDocumentCache } from '@/app/utils/documentCache';
 import { ChangeTypeFilter, ChangeType } from '@/components/ChangeTypeFilter';
 import { DocumentChangeCard } from '@/components/DocumentChangeCard';
 import type { EditDocumentationResponse, DocumentEdit, GeneratedDocument, OriginalContent, ChangeRequest, DocumentEditWithOriginal, UpdateDocumentationResponse } from '@/lib/edit-types';
@@ -420,6 +420,11 @@ export default function DocumentationChangePage() {
         };
         setResponse(newResponse);
         
+        // If some items were successful, invalidate cache
+        if (result.successful > 0) {
+          invalidateDocumentCache();
+        }
+        
         // Show partial success toast
         toast({
           title: 'Partial Success',
@@ -432,6 +437,9 @@ export default function DocumentationChangePage() {
         if (changeId) {
           handleIgnoreSingle(changeId);
         }
+        
+        // Invalidate document cache since content was updated
+        invalidateDocumentCache();
         
         // Show success toast
         toast({
@@ -546,6 +554,11 @@ export default function DocumentationChangePage() {
             setDocumentContents(newDocumentContents);
           }
           
+          // If some items were successful, invalidate cache
+          if (result.successful > 0) {
+            invalidateDocumentCache();
+          }
+          
           // Clear selection since we're showing new set
           setSelectedChanges(new Set());
           
@@ -556,6 +569,10 @@ export default function DocumentationChangePage() {
           });
         } else {
           // All successful
+          
+          // Invalidate document cache since content was updated
+          invalidateDocumentCache();
+          
           toast({
             title: 'Success',
             description: `Successfully applied ${selectedChanges.size} change${selectedChanges.size !== 1 ? 's' : ''}!`,

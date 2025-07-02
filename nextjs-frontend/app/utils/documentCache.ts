@@ -69,3 +69,19 @@ export async function fetchDocumentsWithCache(apiBaseUrl: string): Promise<any> 
   
   return data;
 }
+
+// Helper function to invalidate document cache after updates
+export function invalidateDocumentCache(): void {
+  const cacheKey = 'documents_all';
+  documentCache.invalidate(cacheKey);
+  console.log('Document cache invalidated');
+}
+
+// Helper function to force refresh documents cache
+export async function refreshDocumentCache(apiBaseUrl: string): Promise<any> {
+  // First invalidate the cache
+  invalidateDocumentCache();
+  
+  // Then fetch fresh data
+  return await fetchDocumentsWithCache(apiBaseUrl);
+}

@@ -34,9 +34,16 @@ export default function RootLayout({
           <div className="container mx-auto px-2 sm:px-4 py-3">
             <nav className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
               <Link href="/" className="flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
-                <span className="bg-blue-100 dark:bg-blue-900 p-1 rounded">
-                  <FaBook className="w-5 h-5 text-blue-600 dark:text-blue-300" />
-                </span>
+                <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="16" cy="16" r="16" fill="#2563eb"/>
+                  <path d="M9 7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10l4-4V8a1 1 0 0 0-1-1H9z" fill="white"/>
+                  <path d="M19 20v3l3-3h-3z" fill="#2563eb"/>
+                  <path d="M11 12h6m-6 2h4m-4 2h5" stroke="#2563eb" strokeWidth="1" strokeLinecap="round"/>
+                  <g transform="translate(20, 4)">
+                    <circle cx="4" cy="4" r="4" fill="#10b981" stroke="white" strokeWidth="1"/>
+                    <path d="M2 4l1.5 1.5L6 2.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </g>
+                </svg>
                 Doc-Sync
               </Link>
               <div className="flex items-center gap-2 sm:gap-4">
