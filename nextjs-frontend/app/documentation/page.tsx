@@ -94,7 +94,50 @@ export default function DocumentationPage() {
 
   const handleLanguageChange = (language: string) => {
     setSelectedLanguage(language);
-    setSelectedDocument(null);
+    
+    // Try to find the equivalent document in the new language
+    if (selectedDocument) {
+      const findDocumentByAttributes = (docs: DocumentNode[], targetPath?: string, targetParentId?: string, targetIsApiRef?: boolean): DocumentNode | null => {
+        for (const doc of docs) {
+          // Match by path, parent_id, and is_api_ref
+          if (doc.path === targetPath && 
+              doc.parent_id === targetParentId && 
+              doc.is_api_ref === targetIsApiRef) {
+            return doc;
+          }
+          if (doc.children) {
+            const found = findDocumentByAttributes(doc.children, targetPath, targetParentId, targetIsApiRef);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+
+      // Look for the document in the new language
+      const newLanguageDocs = documents[language];
+      if (newLanguageDocs) {
+        const docsToSearch = activeTab === 'documentation' 
+          ? newLanguageDocs.documentation 
+          : newLanguageDocs.api_references;
+        
+        const foundDoc = findDocumentByAttributes(
+          docsToSearch || [], 
+          selectedDocument.path, 
+          selectedDocument.parent_id, 
+          selectedDocument.is_api_ref
+        );
+        
+        if (foundDoc) {
+          setSelectedDocument(foundDoc);
+        } else {
+          // Document doesn't exist in new language, clear selection
+          setSelectedDocument(null);
+        }
+      } else {
+        // New language data not loaded yet, clear selection
+        setSelectedDocument(null);
+      }
+    }
   };
 
   const handleRefresh = async () => {
