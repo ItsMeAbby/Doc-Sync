@@ -38,3 +38,15 @@ export interface OriginalContent {
   title?: string;
   path?: string;
 }
+
+export interface DocumentEditWithOriginal {
+  document_id: string;
+  changes: ContentChange[];
+  version: string;
+  original_content?: OriginalContent;
+}
+
+export interface ChangeRequest {
+  edit?: DocumentEditWithOriginal[];
+  create?: GeneratedDocument[];
+}

@@ -68,6 +68,7 @@ async def create_document(document: DocumentCreate, content: Optional[DocumentCo
             ).eq("id", doc_id).execute()
         
         # Return the created document (with version_id if content was provided)
+        print(f"Document created with ID: {doc_id}, Version ID: {version_id}")
         return {**new_doc, "current_version_id": version_id}
     
     except Exception as e:
@@ -291,7 +292,7 @@ async def update_document(doc_id: str, document: DocumentUpdate):
 
 
 @router.post("/{doc_id}/versions", response_model=DocumentContentRead)
-async def create_document_version(doc_id: str, content: DocumentContentCreate):
+async def create_document_version(doc_id: str, content: DocumentContentCreate)-> DocumentContentRead:
     """Create a new version for a document (and update latest version)"""
     try:
         # Check if document exists
@@ -322,7 +323,7 @@ async def create_document_version(doc_id: str, content: DocumentContentCreate):
         supabase.table("documents").update(
             {"current_version_id": version_id}
         ).eq("id", str(doc_id)).execute()
-        
+        print(f"New version created for document {doc_id} with version ID: {version_id}")
         return new_version
     
     except Exception as e:

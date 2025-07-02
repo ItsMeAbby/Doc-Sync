@@ -10,7 +10,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { fetchDocumentsWithCache } from '@/app/utils/documentCache';
 import { ChangeTypeFilter, ChangeType } from '@/components/ChangeTypeFilter';
 import { DocumentChangeCard } from '@/components/DocumentChangeCard';
-import type { EditDocumentationResponse, DocumentEdit, GeneratedDocument, OriginalContent } from '@/lib/edit-types';
+import type { EditDocumentationResponse, DocumentEdit, GeneratedDocument, OriginalContent, ChangeRequest, DocumentEditWithOriginal } from '@/lib/edit-types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AlertDialog,
@@ -22,10 +22,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function DocumentationChangePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { toast } = useToast();
   const [query, setQuery] = useState<string>('');
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [documentDetails, setDocumentDetails] = useState<any>(null);
@@ -368,8 +370,43 @@ export default function DocumentationChangePage() {
   const handleApplySingle = async (change: DocumentEdit | GeneratedDocument, type: 'edit' | 'create') => {
     setApplyingChanges(true);
     try {
-      // Simulate applying the change
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      let changeRequest: ChangeRequest;
+      
+      if (type === 'edit') {
+        const editChange = change as DocumentEdit;
+        const originalContent = documentContents.get(editChange.document_id);
+        
+        const editWithOriginal: DocumentEditWithOriginal = {
+          document_id: editChange.document_id,
+          changes: editChange.changes,
+          version: editChange.version,
+          original_content: originalContent
+        };
+        
+        changeRequest = {
+          edit: [editWithOriginal],
+          create: undefined
+        };
+      } else {
+        changeRequest = {
+          edit: undefined,
+          create: [change as GeneratedDocument]
+        };
+      }
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/edit/update_documentation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(changeRequest),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to apply change: ${res.status} ${res.statusText}`);
+      }
+
+      const result = await res.json();
       
       // Remove the applied change from response
       const changeId = type === 'edit' ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || '';
@@ -377,11 +414,19 @@ export default function DocumentationChangePage() {
         handleIgnoreSingle(changeId);
       }
       
-      // Show success message (you can add a toast notification here)
-      alert('Change applied successfully!');
+      // Show success toast
+      toast({
+        title: 'Success',
+        description: 'Change applied successfully!',
+        variant: 'success',
+      });
     } catch (err) {
       console.error('Failed to apply change:', err);
-      alert('Failed to apply change');
+      toast({
+        title: 'Error',
+        description: 'Failed to apply change',
+        variant: 'destructive',
+      });
     } finally {
       setApplyingChanges(false);
     }
@@ -418,18 +463,59 @@ export default function DocumentationChangePage() {
     setApplyingChanges(true);
     try {
       if (confirmAction === 'ignore') {
-        // Handle ignore action
+        // Handle ignore action - no API call needed
+        await new Promise(resolve => setTimeout(resolve, 100));
         handleIgnoreSelected();
-        alert(`Successfully ignored ${selectedChanges.size} change${selectedChanges.size !== 1 ? 's' : ''}!`);
+        toast({
+          title: 'Changes Ignored',
+          description: `Successfully ignored ${selectedChanges.size} change${selectedChanges.size !== 1 ? 's' : ''}`,
+          variant: 'default',
+        });
       } else {
-        // Handle apply action
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        alert(`Successfully applied ${selectedChanges.size} change${selectedChanges.size !== 1 ? 's' : ''}!`);
+        // Handle apply action - call update_documentation endpoint
+        const editsToApply = changesToApply.filter(c => 'changes' in c) as DocumentEdit[];
+        const createstoApply = changesToApply.filter(c => 'markdown_content_en' in c) as GeneratedDocument[];
+        
+        // Convert DocumentEdit to DocumentEditWithOriginal
+        const editsWithOriginal: DocumentEditWithOriginal[] = editsToApply.map(edit => ({
+          document_id: edit.document_id,
+          changes: edit.changes,
+          version: edit.version,
+          original_content: documentContents.get(edit.document_id)
+        }));
+        
+        const changeRequest: ChangeRequest = {
+          edit: editsWithOriginal.length > 0 ? editsWithOriginal : undefined,
+          create: createstoApply.length > 0 ? createstoApply : undefined
+        };
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/edit/update_documentation`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(changeRequest),
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to apply changes: ${res.status} ${res.statusText}`);
+        }
+
+        const result = await res.json();
+        toast({
+          title: 'Success',
+          description: `Successfully applied ${selectedChanges.size} change${selectedChanges.size !== 1 ? 's' : ''}!`,
+          variant: 'success',
+        });
         handleIgnoreSelected(); // Remove applied changes from response
       }
     } catch (err) {
       console.error('Failed to process changes:', err);
-      alert('Failed to process changes');
+      toast({
+        title: 'Error',
+        description: 'Failed to process changes',
+        variant: 'destructive',
+      });
     } finally {
       setApplyingChanges(false);
       setConfirmAction(null);

@@ -7,9 +7,7 @@ from app.config import settings
 import json
 import asyncio
 
-
-
-from app.models.edit_documentation import EditDocumentationResponse
+from app.models.edit_documentation import DocumentEditWithOriginal, EditDocumentationResponse, ChangeRequest
 class MainEditor:
     def __init__(self, query: str):
         self.query = query
@@ -70,8 +68,6 @@ class MainEditor:
             f"User query: {self.query} Task: {intent.task} Reason: {intent.reason}. Provide edit suggestions for the documentation based on the task"
         )
         edit_agent_suggestions = edit_suggestion_agent_response.final_output_as(EditAgentResponse)
-        print("Edit Suggestions:")
-        print(edit_agent_suggestions.model_dump_json(indent=2))
         return edit_agent_suggestions
     
     async def _process_edit_suggestions(self, suggestions) -> list[DocumentEdit]:
@@ -111,3 +107,15 @@ class MainEditor:
         response = await Runner.run(intent_agent, f"Detect intent for query: {self.query}")
         print(f"Detected intent: {response}")
         return response.final_output_as(Detected_Intent)
+
+
+def update_markdown(document_to_edit:DocumentEditWithOriginal ) -> str:
+    """
+    Update the content of a document based on the provided edit changes.
+    This function is a placeholder for the actual implementation that would apply the edits.
+    """
+    original_md= document_to_edit.original_content.markdown_content if document_to_edit.original_content else ""
+    for change in document_to_edit.changes:
+        if change.old_string and change.new_string:
+            original_md = original_md.replace(change.old_string, change.new_string, 1)
+    return original_md
