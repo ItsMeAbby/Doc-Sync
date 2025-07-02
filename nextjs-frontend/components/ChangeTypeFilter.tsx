@@ -106,7 +106,7 @@ export function ChangeTypeFilter({
         )}
         
         <div className="flex gap-1">
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="default"
@@ -135,7 +135,7 @@ export function ChangeTypeFilter({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"

@@ -52,8 +52,6 @@ export function DocumentChangeCard({
 
   const getTitle = () => {
     if (isEdit) {
-      console.log("Edit Change:", editChange);
-      console.log("Original Content:", originalContent);
       return `Edit: ${originalContent?.title || originalContent?.name || editChange.document_id}`;
     }
     return `Create: ${createChange.title}`;
@@ -74,7 +72,6 @@ export function DocumentChangeCard({
   };
 
   const applyChangesToContent = (content: string, changes: ContentChange[]) => {
-    console.log("Applying changes to content:", content, changes);
     
     // Handle undefined or empty content
     if (!content) {

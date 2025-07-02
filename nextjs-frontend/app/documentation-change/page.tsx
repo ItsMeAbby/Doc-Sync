@@ -12,6 +12,16 @@ import { ChangeTypeFilter, ChangeType } from '@/components/ChangeTypeFilter';
 import { DocumentChangeCard } from '@/components/DocumentChangeCard';
 import type { EditDocumentationResponse, DocumentEdit, GeneratedDocument, OriginalContent } from '@/lib/edit-types';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function DocumentationChangePage() {
   const searchParams = useSearchParams();
@@ -27,6 +37,8 @@ export default function DocumentationChangePage() {
   const [selectedChanges, setSelectedChanges] = useState<Set<string>>(new Set());
   const [applyingChanges, setApplyingChanges] = useState(false);
   const [documentContents, setDocumentContents] = useState<Map<string, OriginalContent>>(new Map());
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'selected' | 'all' | null>(null);
 
   useEffect(() => {
     const queryParam = searchParams.get('query');
@@ -241,6 +253,16 @@ export default function DocumentationChangePage() {
     }
   };
 
+  // Generate stable IDs for create changes
+  const createChangeIds = useMemo(() => {
+    if (!response?.create) return new Map<GeneratedDocument, string>();
+    const ids = new Map<GeneratedDocument, string>();
+    response.create.forEach((change, index) => {
+      ids.set(change, `create-${index}`);
+    });
+    return ids;
+  }, [response?.create]);
+
   // Filter changes based on active filter
   const filteredChanges = useMemo(() => {
     if (!response) return [];
@@ -294,11 +316,8 @@ export default function DocumentationChangePage() {
 
   const handleApplySelected = () => {
     if (changesToApply.length > 0) {
-      const documentCount = changesToApply.length;
-      const confirmed = window.confirm(`Do you want to proceed? This will affect ${documentCount} document${documentCount !== 1 ? 's' : ''}.`);
-      if (confirmed) {
-        handleConfirmApply();
-      }
+      setConfirmAction('selected');
+      setShowConfirmDialog(true);
     }
   };
 
@@ -310,11 +329,8 @@ export default function DocumentationChangePage() {
     });
     setSelectedChanges(new Set(allIds));
     
-    const documentCount = filteredChanges.length;
-    const confirmed = window.confirm(`Do you want to proceed? This will affect ${documentCount} document${documentCount !== 1 ? 's' : ''}.`);
-    if (confirmed) {
-      handleConfirmApply();
-    }
+    setConfirmAction('all');
+    setShowConfirmDialog(true);
   };
 
   const handleIgnoreSelected = () => {
@@ -389,6 +405,7 @@ export default function DocumentationChangePage() {
   };
 
   const handleConfirmApply = async () => {
+    setShowConfirmDialog(false);
     setApplyingChanges(true);
     try {
       // Simulate applying all selected changes
@@ -404,7 +421,17 @@ export default function DocumentationChangePage() {
       alert('Failed to apply changes');
     } finally {
       setApplyingChanges(false);
+      setConfirmAction(null);
     }
+  };
+
+  const getDocumentCount = () => {
+    if (confirmAction === 'selected') {
+      return changesToApply.length;
+    } else if (confirmAction === 'all') {
+      return filteredChanges.length;
+    }
+    return 0;
   };
 
   return (
@@ -565,6 +592,44 @@ export default function DocumentationChangePage() {
           </ScrollArea>
         </Card>
       )}
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={(open) => {
+        setShowConfirmDialog(open);
+        if (!open) {
+          setConfirmAction(null);
+          setTimeout(() => (document.body.style.pointerEvents = ""), 100);
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will apply changes to {getDocumentCount()} document{getDocumentCount() !== 1 ? 's' : ''}. 
+              {confirmAction === 'all' 
+                ? 'All suggested changes will be applied to the selected documents.' 
+                : 'Only the selected changes will be applied to the chosen documents.'
+              }
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmApply}
+              disabled={applyingChanges}
+            >
+              {applyingChanges ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Applying changes...
+                </>
+              ) : (
+                `Apply ${confirmAction === 'all' ? 'All' : 'Selected'} Changes`
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
