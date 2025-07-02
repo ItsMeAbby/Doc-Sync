@@ -360,6 +360,18 @@ export default function DocumentationChangePage() {
     setSelectedChanges(new Set());
   };
 
+  const handleSelectAll = () => {
+    const allIds = filteredChanges.map((change, index) => {
+      const isEdit = 'changes' in change;
+      return isEdit ? (change as DocumentEdit).document_id : `create-${index}`;
+    });
+    setSelectedChanges(new Set(allIds));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedChanges(new Set());
+  };
+
   const handleApplySingle = async (change: DocumentEdit | GeneratedDocument, type: 'edit' | 'create') => {
     setApplyingChanges(true);
     try {
@@ -555,6 +567,8 @@ export default function DocumentationChangePage() {
             onApplyAll={handleApplyAll}
             onIgnoreSelected={handleIgnoreSelected}
             onIgnoreAll={handleIgnoreAll}
+            onSelectAll={handleSelectAll}
+            onDeselectAll={handleDeselectAll}
             disabled={applyingChanges}
           />
           

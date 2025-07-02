@@ -35,6 +35,8 @@ interface ChangeTypeFilterProps {
   onApplyAll: () => void;
   onIgnoreSelected: () => void;
   onIgnoreAll: () => void;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
   disabled?: boolean;
 }
 
@@ -48,6 +50,8 @@ export function ChangeTypeFilter({
   onApplyAll,
   onIgnoreSelected,
   onIgnoreAll,
+  onSelectAll,
+  onDeselectAll,
   disabled = false,
 }: ChangeTypeFilterProps) {
   const totalCount = editCount + createCount;
@@ -104,6 +108,27 @@ export function ChangeTypeFilter({
             {selectedCount} selected
           </span>
         )}
+        
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onSelectAll}
+            disabled={disabled || totalCount === 0}
+            className="text-xs"
+          >
+            Select All
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDeselectAll}
+            disabled={disabled || selectedCount === 0}
+            className="text-xs"
+          >
+            Deselect All
+          </Button>
+        </div>
         
         <div className="flex gap-1">
           <DropdownMenu modal={false}>
