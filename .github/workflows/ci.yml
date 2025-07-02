@@ -11,12 +11,13 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
-      ACCESS_SECRET_KEY: ${{ secrets.ACCESS_SECRET_KEY }}
-      RESET_PASSWORD_SECRET_KEY: ${{ secrets.RESET_PASSWORD_SECRET_KEY }}
-      VERIFICATION_SECRET_KEY: ${{ secrets.VERIFICATION_SECRET_KEY }}
-      CORS_ORIGINS: ${{ secrets.CORS_ORIGINS }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      CORS_ORIGINS: '["*"]'
+      OPENAI_MODEL: "gpt-4.1"
+      OPENAI_EMBEDDING_MODEL: "text-embedding-3-large"
+      LANGUAGES: '["en", "ja"]'
 
     services:
       postgres:
@@ -65,6 +66,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      API_BASE_URL: "http://localhost:8000"
+      OPENAPI_OUTPUT_FILE: "../local-shared-data/openapi.json"
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -72,13 +77,15 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
           run_install: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: pnpm
+          cache-dependency-path: nextjs-frontend/pnpm-lock.yaml
 
       - name: Install Node dependencies
         working-directory: ./nextjs-frontend
@@ -94,6 +101,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           flag-name: node-coverage
           parallel: true
+          path-to-lcov: nextjs-frontend/coverage/lcov.info
 
   finish:
 
