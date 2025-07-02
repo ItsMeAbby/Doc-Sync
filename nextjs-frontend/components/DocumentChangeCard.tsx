@@ -43,7 +43,7 @@ export function DocumentChangeCard({
   originalContent,
   disabled = false,
 }: DocumentChangeCardProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [viewMode, setViewMode] = useState<"inline" | "split">("split");
   const [showIndividualChanges, setShowIndividualChanges] = useState(false);
   const [individualChangesExpanded, setIndividualChangesExpanded] = useState<{[key: number]: boolean}>({});

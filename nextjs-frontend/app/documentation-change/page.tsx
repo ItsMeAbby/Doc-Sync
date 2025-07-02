@@ -38,7 +38,7 @@ export default function DocumentationChangePage() {
   const [applyingChanges, setApplyingChanges] = useState(false);
   const [documentContents, setDocumentContents] = useState<Map<string, OriginalContent>>(new Map());
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<'selected' | 'all' | null>(null);
+  const [confirmAction, setConfirmAction] = useState<'selected' | 'ignore' | null>(null);
 
   useEffect(() => {
     const queryParam = searchParams.get('query');
@@ -288,10 +288,10 @@ export default function DocumentationChangePage() {
   const changesToApply = useMemo(() => {
     return filteredChanges.filter((change) => {
       const isEdit = 'changes' in change;
-      const changeId = isEdit ? (change as DocumentEdit).document_id : `create-${filteredChanges.indexOf(change)}`;
+      const changeId = isEdit ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || '';
       return selectedChanges.has(changeId);
     });
-  }, [filteredChanges, selectedChanges]);
+  }, [filteredChanges, selectedChanges, createChangeIds]);
 
   const getChangeType = (): "edit" | "create" | "mixed" => {
     const hasEdits = changesToApply.some(c => 'changes' in c);
@@ -314,23 +314,18 @@ export default function DocumentationChangePage() {
     });
   };
 
-  const handleApplySelected = () => {
-    if (changesToApply.length > 0) {
+  const handleApply = () => {
+    if (selectedChanges.size > 0) {
       setConfirmAction('selected');
       setShowConfirmDialog(true);
     }
   };
 
-  const handleApplyAll = () => {
-    // Select all filtered changes
-    const allIds = filteredChanges.map((change, index) => {
-      const isEdit = 'changes' in change;
-      return isEdit ? (change as DocumentEdit).document_id : `create-${index}`;
-    });
-    setSelectedChanges(new Set(allIds));
-    
-    setConfirmAction('all');
-    setShowConfirmDialog(true);
+  const handleIgnore = () => {
+    if (selectedChanges.size > 0) {
+      setConfirmAction('ignore');
+      setShowConfirmDialog(true);
+    }
   };
 
   const handleIgnoreSelected = () => {
@@ -347,7 +342,10 @@ export default function DocumentationChangePage() {
     
     if (newResponse.create) {
       newResponse.create = newResponse.create.filter(
-        (_: GeneratedDocument, index: number) => !selectedChanges.has(`create-${index}`)
+        (createChange: GeneratedDocument) => {
+          const createId = createChangeIds.get(createChange) || '';
+          return !selectedChanges.has(createId);
+        }
       );
     }
     
@@ -355,16 +353,11 @@ export default function DocumentationChangePage() {
     setSelectedChanges(new Set());
   };
 
-  const handleIgnoreAll = () => {
-    setResponse({ edit: [], create: [] });
-    setSelectedChanges(new Set());
-  };
-
   const handleSelectAll = () => {
-    const allIds = filteredChanges.map((change, index) => {
+    const allIds = filteredChanges.map((change) => {
       const isEdit = 'changes' in change;
-      return isEdit ? (change as DocumentEdit).document_id : `create-${index}`;
-    });
+      return isEdit ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || '';
+    }).filter(id => id !== '');
     setSelectedChanges(new Set(allIds));
   };
 
@@ -379,8 +372,10 @@ export default function DocumentationChangePage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Remove the applied change from response
-      const changeId = type === 'edit' ? (change as DocumentEdit).document_id : `create-${filteredChanges.indexOf(change)}`;
-      handleIgnoreSingle(changeId);
+      const changeId = type === 'edit' ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || '';
+      if (changeId) {
+        handleIgnoreSingle(changeId);
+      }
       
       // Show success message (you can add a toast notification here)
       alert('Change applied successfully!');
@@ -398,9 +393,11 @@ export default function DocumentationChangePage() {
     const newResponse = { ...response };
     
     if (changeId.startsWith('create-')) {
-      const index = parseInt(changeId.replace('create-', ''));
       if (newResponse.create) {
-        newResponse.create = newResponse.create.filter((_: GeneratedDocument, i: number) => i !== index);
+        newResponse.create = newResponse.create.filter((createChange: GeneratedDocument) => {
+          const createId = createChangeIds.get(createChange) || '';
+          return createId !== changeId;
+        });
       }
     } else {
       if (newResponse.edit) {
@@ -420,17 +417,19 @@ export default function DocumentationChangePage() {
     setShowConfirmDialog(false);
     setApplyingChanges(true);
     try {
-      // Simulate applying all selected changes
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Show success message
-      alert(`Successfully applied ${changesToApply.length} change${changesToApply.length !== 1 ? 's' : ''}!`);
-      
-      // Remove applied changes from response
-      handleIgnoreSelected();
+      if (confirmAction === 'ignore') {
+        // Handle ignore action
+        handleIgnoreSelected();
+        alert(`Successfully ignored ${selectedChanges.size} change${selectedChanges.size !== 1 ? 's' : ''}!`);
+      } else {
+        // Handle apply action
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        alert(`Successfully applied ${selectedChanges.size} change${selectedChanges.size !== 1 ? 's' : ''}!`);
+        handleIgnoreSelected(); // Remove applied changes from response
+      }
     } catch (err) {
-      console.error('Failed to apply changes:', err);
-      alert('Failed to apply changes');
+      console.error('Failed to process changes:', err);
+      alert('Failed to process changes');
     } finally {
       setApplyingChanges(false);
       setConfirmAction(null);
@@ -438,12 +437,7 @@ export default function DocumentationChangePage() {
   };
 
   const getDocumentCount = () => {
-    if (confirmAction === 'selected') {
-      return changesToApply.length;
-    } else if (confirmAction === 'all') {
-      return filteredChanges.length;
-    }
-    return 0;
+    return selectedChanges.size;
   };
 
   return (
@@ -563,10 +557,8 @@ export default function DocumentationChangePage() {
             editCount={response.edit?.length || 0}
             createCount={response.create?.length || 0}
             selectedCount={selectedChanges.size}
-            onApplySelected={handleApplySelected}
-            onApplyAll={handleApplyAll}
-            onIgnoreSelected={handleIgnoreSelected}
-            onIgnoreAll={handleIgnoreAll}
+            onApply={handleApply}
+            onIgnore={handleIgnore}
             onSelectAll={handleSelectAll}
             onDeselectAll={handleDeselectAll}
             disabled={applyingChanges}
@@ -576,7 +568,7 @@ export default function DocumentationChangePage() {
             <div className="space-y-4 pt-4">
               {filteredChanges.map((change, index) => {
                 const isEdit = 'changes' in change;
-                const changeId = isEdit ? (change as DocumentEdit).document_id : `create-${index}`;
+                const changeId = isEdit ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || `create-${index}`;
                 const originalContentDict = isEdit ? documentContents.get((change as DocumentEdit).document_id) || {
                   markdown_content: ''
                 }: {
@@ -618,12 +610,11 @@ export default function DocumentationChangePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will apply changes to {getDocumentCount()} document{getDocumentCount() !== 1 ? 's' : ''}. 
-              {confirmAction === 'all' 
-                ? 'All suggested changes will be applied to the selected documents.' 
-                : 'Only the selected changes will be applied to the chosen documents.'
+              This action will {confirmAction === 'ignore' ? 'ignore' : 'apply'} {getDocumentCount()} change{getDocumentCount() !== 1 ? 's' : ''}. 
+              {confirmAction === 'ignore' 
+                ? 'The selected changes will be removed from the list and cannot be recovered.' 
+                : 'The selected changes will be applied to the documents. This action cannot be undone.'
               }
-              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -631,14 +622,15 @@ export default function DocumentationChangePage() {
             <AlertDialogAction
               onClick={handleConfirmApply}
               disabled={applyingChanges}
+              className={confirmAction === 'ignore' ? 'bg-red-600 hover:bg-red-700' : ''}
             >
               {applyingChanges ? (
                 <>
                   <Spinner size="sm" className="mr-2" />
-                  Applying changes...
+                  {confirmAction === 'ignore' ? 'Ignoring' : 'Applying'} changes...
                 </>
               ) : (
-                `Apply ${confirmAction === 'all' ? 'All' : 'Selected'} Changes`
+                `${confirmAction === 'ignore' ? 'Ignore' : 'Apply'} Selected Changes`
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

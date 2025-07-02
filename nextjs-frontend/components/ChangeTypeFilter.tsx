@@ -7,21 +7,10 @@ import { cn } from "@/lib/utils";
 import { 
   FileEdit, 
   FilePlus, 
-  Check, 
-  X, 
   CheckCircle2,
   XCircle,
   Filter
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export type ChangeType = "edit" | "create" | "all";
 
@@ -31,10 +20,8 @@ interface ChangeTypeFilterProps {
   editCount: number;
   createCount: number;
   selectedCount: number;
-  onApplySelected: () => void;
-  onApplyAll: () => void;
-  onIgnoreSelected: () => void;
-  onIgnoreAll: () => void;
+  onApply: () => void;
+  onIgnore: () => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
   disabled?: boolean;
@@ -46,10 +33,8 @@ export function ChangeTypeFilter({
   editCount,
   createCount,
   selectedCount,
-  onApplySelected,
-  onApplyAll,
-  onIgnoreSelected,
-  onIgnoreAll,
+  onApply,
+  onIgnore,
   onSelectAll,
   onDeselectAll,
   disabled = false,
@@ -131,63 +116,27 @@ export function ChangeTypeFilter({
         </div>
         
         <div className="flex gap-1">
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="default"
-                size="sm"
-                disabled={disabled || totalCount === 0}
-                className="gap-2"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                Apply
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Apply Changes</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={onApplySelected}
-                disabled={selectedCount === 0}
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Apply Selected ({selectedCount})
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onApplyAll}>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Apply All ({totalCount})
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={onApply}
+            disabled={disabled || selectedCount === 0}
+            className="gap-2"
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            Apply ({selectedCount})
+          </Button>
 
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={disabled || totalCount === 0}
-                className="gap-2"
-              >
-                <XCircle className="h-4 w-4" />
-                Ignore
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Ignore Changes</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={onIgnoreSelected}
-                disabled={selectedCount === 0}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Ignore Selected ({selectedCount})
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onIgnoreAll}>
-                <XCircle className="h-4 w-4 mr-2" />
-                Ignore All ({totalCount})
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onIgnore}
+            disabled={disabled || selectedCount === 0}
+            className="gap-2"
+          >
+            <XCircle className="h-4 w-4" />
+            Ignore ({selectedCount})
+          </Button>
         </div>
       </div>
     </div>
