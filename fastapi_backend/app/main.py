@@ -5,6 +5,11 @@ from app.utils import simple_generate_unique_route_id
 from app.routes.documents import router as documents_router
 from app.routes.edit_documentation import router as edit_documentation_router
 from app.config import settings
+import os
+import openai
+# Initialize OpenAI client with the API key from settings
+openai.api_key = settings.OPENAI_API_KEY
+os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
 
 app = FastAPI(
     generate_unique_id_function=simple_generate_unique_route_id,
