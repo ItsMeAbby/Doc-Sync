@@ -45,6 +45,8 @@ export function DocumentChangeCard({
 }: DocumentChangeCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [viewMode, setViewMode] = useState<"inline" | "split">("split");
+  const [showIndividualChanges, setShowIndividualChanges] = useState(false);
+  const [individualChangesExpanded, setIndividualChangesExpanded] = useState<{[key: number]: boolean}>({});
 
   const isEdit = type === "edit";
   const editChange = change as DocumentEdit;
@@ -92,6 +94,13 @@ export function DocumentChangeCard({
     });
 
     return modifiedContent;
+  };
+
+  const toggleIndividualChange = (index: number) => {
+    setIndividualChangesExpanded(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
   };
 
   return (
@@ -203,31 +212,67 @@ export function DocumentChangeCard({
             </div>
 
             {isEdit && editChange.changes.length > 1 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Individual Changes:</h4>
-                <div className="space-y-2">
-                  {editChange.changes.map((change: ContentChange, index: number) => (
-                    <div key={index} className="border rounded p-3 space-y-2">
-                      <Badge variant="outline" className="text-xs">
-                        Change {index + 1}
-                      </Badge>
-                      <div className="grid gap-2 text-sm">
-                        <div>
-                          <span className="text-red-600 dark:text-red-400">- </span>
-                          <span className="font-mono bg-red-50 dark:bg-red-900/20 px-1 rounded">
-                            {change.old_string}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-green-600 dark:text-green-400">+ </span>
-                          <span className="font-mono bg-green-50 dark:bg-green-900/20 px-1 rounded">
-                            {change.new_string}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium">Individual Changes:</h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowIndividualChanges(!showIndividualChanges)}
+                    className="text-xs gap-1"
+                  >
+                    {showIndividualChanges ? (
+                      <>
+                        <ChevronDown className="h-3 w-3" />
+                        Hide Details
+                      </>
+                    ) : (
+                      <>
+                        <ChevronRight className="h-3 w-3" />
+                        Show Details ({editChange.changes.length})
+                      </>
+                    )}
+                  </Button>
                 </div>
+                
+                {showIndividualChanges && (
+                  <div className="space-y-3">
+                    {editChange.changes.map((change: ContentChange, index: number) => (
+                      <div key={index} className="border rounded-lg overflow-hidden">
+                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border-b">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              Change {index + 1}
+                            </Badge>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleIndividualChange(index)}
+                            className="p-1 h-auto"
+                          >
+                            {individualChangesExpanded[index] ? (
+                              <ChevronDown className="h-3 w-3" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </div>
+                        
+                        {individualChangesExpanded[index] && (
+                          <div className="p-3">
+                            <DiffViewer
+                              oldContent={change.old_string}
+                              newContent={change.new_string}
+                              viewMode="split"
+                              enableMarkdown={true}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
