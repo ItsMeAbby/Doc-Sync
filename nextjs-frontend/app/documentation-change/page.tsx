@@ -10,7 +10,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { fetchDocumentsWithCache } from '@/app/utils/documentCache';
 import { ChangeTypeFilter, ChangeType } from '@/components/ChangeTypeFilter';
 import { DocumentChangeCard } from '@/components/DocumentChangeCard';
-import type { EditDocumentationResponse, DocumentEdit, GeneratedDocument, OriginalContent, ChangeRequest, DocumentEditWithOriginal } from '@/lib/edit-types';
+import type { EditDocumentationResponse, DocumentEdit, GeneratedDocument, OriginalContent, ChangeRequest, DocumentEditWithOriginal, UpdateDocumentationResponse } from '@/lib/edit-types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AlertDialog,
@@ -406,20 +406,40 @@ export default function DocumentationChangePage() {
         throw new Error(`Failed to apply change: ${res.status} ${res.statusText}`);
       }
 
-      const result = await res.json();
+      const result: UpdateDocumentationResponse = await res.json();
       
-      // Remove the applied change from response
-      const changeId = type === 'edit' ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || '';
-      if (changeId) {
-        handleIgnoreSingle(changeId);
+      if (result.failed > 0 && result.failed_items) {
+        // Some items failed, update response to show only failed items
+        const newResponse: EditDocumentationResponse = {
+          edit: result.failed_items.edit?.map(editWithOriginal => ({
+            document_id: editWithOriginal.document_id,
+            changes: editWithOriginal.changes,
+            version: editWithOriginal.version
+          })) || [],
+          create: result.failed_items.create || []
+        };
+        setResponse(newResponse);
+        
+        // Show partial success toast
+        toast({
+          title: 'Partial Success',
+          description: `${result.successful} successful, ${result.failed} failed. Failed items remain in the list.`,
+          variant: 'destructive',
+        });
+      } else {
+        // All successful, remove the applied change from response
+        const changeId = type === 'edit' ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || '';
+        if (changeId) {
+          handleIgnoreSingle(changeId);
+        }
+        
+        // Show success toast
+        toast({
+          title: 'Success',
+          description: 'Change applied successfully!',
+          variant: 'success',
+        });
       }
-      
-      // Show success toast
-      toast({
-        title: 'Success',
-        description: 'Change applied successfully!',
-        variant: 'success',
-      });
     } catch (err) {
       console.error('Failed to apply change:', err);
       toast({
@@ -501,13 +521,48 @@ export default function DocumentationChangePage() {
           throw new Error(`Failed to apply changes: ${res.status} ${res.statusText}`);
         }
 
-        const result = await res.json();
-        toast({
-          title: 'Success',
-          description: `Successfully applied ${selectedChanges.size} change${selectedChanges.size !== 1 ? 's' : ''}!`,
-          variant: 'success',
-        });
-        handleIgnoreSelected(); // Remove applied changes from response
+        const result: UpdateDocumentationResponse = await res.json();
+        
+        if (result.failed > 0 && result.failed_items) {
+          // Some items failed, update response to show only failed items
+          const newResponse: EditDocumentationResponse = {
+            edit: result.failed_items.edit?.map(editWithOriginal => ({
+              document_id: editWithOriginal.document_id,
+              changes: editWithOriginal.changes,
+              version: editWithOriginal.version
+            })) || [],
+            create: result.failed_items.create || []
+          };
+          setResponse(newResponse);
+          
+          // Update document contents for failed items only
+          if (result.failed_items.edit) {
+            const newDocumentContents = new Map<string, OriginalContent>();
+            for (const edit of result.failed_items.edit) {
+              if (edit.original_content) {
+                newDocumentContents.set(edit.document_id, edit.original_content);
+              }
+            }
+            setDocumentContents(newDocumentContents);
+          }
+          
+          // Clear selection since we're showing new set
+          setSelectedChanges(new Set());
+          
+          toast({
+            title: 'Partial Success',
+            description: `${result.successful} successful, ${result.failed} failed. Only failed items remain.`,
+            variant: 'default',
+          });
+        } else {
+          // All successful
+          toast({
+            title: 'Success',
+            description: `Successfully applied ${selectedChanges.size} change${selectedChanges.size !== 1 ? 's' : ''}!`,
+            variant: 'success',
+          });
+          handleIgnoreSelected(); // Remove applied changes from response
+        }
       }
     } catch (err) {
       console.error('Failed to process changes:', err);

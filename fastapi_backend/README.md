@@ -66,7 +66,7 @@ CREATE TABLE document_contents (
 ### Add Foreign Key Constraint
 ```sql
 ALTER TABLE documents
-ADD CONSTRAINT fk_current_version
+ADD CONSTRAINT documents_current_version_fkey
 FOREIGN KEY (current_version_id)
 REFERENCES document_contents(version);
 ```

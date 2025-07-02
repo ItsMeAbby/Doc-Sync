@@ -50,3 +50,17 @@ export interface ChangeRequest {
   edit?: DocumentEditWithOriginal[];
   create?: GeneratedDocument[];
 }
+
+export interface ProcessingError {
+  error_message: string;
+  error_type: string;
+}
+
+export interface UpdateDocumentationResponse {
+  message: string;
+  total_processed: number;
+  successful: number;
+  failed: number;
+  failed_items?: ChangeRequest;
+  errors?: ProcessingError[];
+}

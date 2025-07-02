@@ -118,15 +118,13 @@ async def list_document_versions(doc_id: str):
 async def get_document_version(doc_id: str, version_id: str):
     """Get a specific version (optional: `latest` as alias)"""
     try:
+        doc_result = supabase.table("documents").select("*").eq("id", str(doc_id)).execute()
         if version_id.lower() == "latest":
-            # Get the document to find current_version_id
-            doc_result = supabase.table("documents").select("*").eq("id", str(doc_id)).execute()
-        else:
-            doc_result = supabase.table("documents").select("*").eq("id", str(doc_id)).eq("current_version_id", version_id).execute()
-        if not doc_result.data:
-            raise HTTPException(status_code=404, detail="Document not found")
+            version_id = doc_result.data[0].get("current_version_id")
+            if not doc_result.data:
+                raise HTTPException(status_code=404, detail="Document not found")
         
-        version_id = doc_result.data[0].get("current_version_id")
+        
         name= doc_result.data[0].get("name")
         title= doc_result.data[0].get("title")
         path= doc_result.data[0].get("path")
@@ -217,7 +215,7 @@ async def get_all_documents(
     try:
         # First, let's build the base query with proper join
         query = (supabase.table("documents")
-                .select("*, document_contents!fk_current_version(markdown_content, language, keywords_array)")
+                .select("*, document_contents!documents_current_version_fkey(markdown_content, language, keywords_array)")
                 .eq("is_deleted", is_deleted))
         
         # Apply optional filters

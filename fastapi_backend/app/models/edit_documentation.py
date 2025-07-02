@@ -50,3 +50,25 @@ class ChangeRequest(BaseModel):
         default=[],
         description="List of newly created documents based on the query"
     )
+
+class ProcessingError(BaseModel):
+    """Error details for failed processing"""
+    error_message: str
+    error_type: str
+
+class UpdateDocumentationResponse(BaseModel):
+    """
+    Response for update_documentation endpoint with detailed results
+    """
+    message: str
+    total_processed: int
+    successful: int
+    failed: int
+    failed_items: Optional[ChangeRequest] = Field(
+        default=None,
+        description="Change request containing only the items that failed processing"
+    )
+    errors: Optional[List[ProcessingError]] = Field(
+        default=[],
+        description="Detailed error information"
+    )
