@@ -9,6 +9,7 @@ The user may want to:
 2.Create a new document
 3.Delete a document
 4.Move a document
+5. Other (if the query does not fit into any of the above categories or its not related to documentation management, or you are not sure about the intent)
 """
 
 EDIT_SUGGESTION_PROMPT="""

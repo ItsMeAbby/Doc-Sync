@@ -10,7 +10,7 @@ from app.config import settings
 class Intent_Item(BaseModel):
     reason: str
     """Your reasoning for why this intent was detected."""
-    intent: Literal["edit", "create", "delete", "move"]
+    intent: Literal["edit", "create", "delete", "move", "other"]
     """The detected intent based on the user's query."""
     task: str
     """The specific task associated with the detected intent, if applicable. like for particular intent, rewrite user query as a query specific to this intent only"""

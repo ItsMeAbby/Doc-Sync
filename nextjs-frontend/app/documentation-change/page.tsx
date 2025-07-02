@@ -409,22 +409,66 @@ export default function DocumentationChangePage() {
       const result: UpdateDocumentationResponse = await res.json();
       
       if (result.failed > 0 && result.failed_items) {
-        // Some items failed, update response to show only failed items
-        const newResponse: EditDocumentationResponse = {
-          edit: result.failed_items.edit?.map(editWithOriginal => ({
-            document_id: editWithOriginal.document_id,
-            changes: editWithOriginal.changes,
-            version: editWithOriginal.version
-          })) || [],
-          create: result.failed_items.create || []
-        };
-        setResponse(newResponse);
+        // Some items failed, preserve unrelated changes and merge failed items
+        // Determine the change that was requested (single change)
+        const requestedChangeId = type === 'edit' ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || '';
+        
+        const currentResponse = response;
+        if (currentResponse) {
+          const newResponse = { ...currentResponse };
+          
+          // Remove successfully applied change or keep failed change
+          if (type === 'edit') {
+            const isFailed = result.failed_items.edit?.some(failed => failed.document_id === requestedChangeId);
+            if (!isFailed && newResponse.edit) {
+              // Success: remove from response
+              newResponse.edit = newResponse.edit.filter(edit => edit.document_id !== requestedChangeId);
+            }
+          } else {
+            const isFailed = result.failed_items.create?.some(failed => {
+              const failedId = createChangeIds.get(failed) || '';
+              return failedId === requestedChangeId;
+            });
+            if (!isFailed && newResponse.create) {
+              // Success: remove from response
+              newResponse.create = newResponse.create.filter(create => {
+                const createId = createChangeIds.get(create) || '';
+                return createId !== requestedChangeId;
+              });
+            }
+          }
+          
+          setResponse(newResponse);
+        }
         
         // If some items were successful, invalidate cache
         if (result.successful > 0) {
           invalidateDocumentCache();
         }
         
+        // Update document contents for failed items only
+        if (result.failed_items?.edit && type === 'edit') {
+          const isFailed = result.failed_items.edit.some(failed => failed.document_id === requestedChangeId);
+          if (isFailed) {
+            // Update document contents with fresh original content for failed item
+            setDocumentContents(prev => {
+              const updated = new Map(prev);
+              const failedEdit = result.failed_items?.edit?.find(failed => failed.document_id === requestedChangeId);
+              if (failedEdit?.original_content) {
+                updated.set(requestedChangeId, failedEdit.original_content);
+              }
+              return updated;
+            });
+          } else {
+            // Remove successful item from document contents
+            setDocumentContents(prev => {
+              const updated = new Map(prev);
+              updated.delete(requestedChangeId);
+              return updated;
+            });
+          }
+        }
+
         // Show partial success toast
         toast({
           title: 'Partial Success',
@@ -532,35 +576,99 @@ export default function DocumentationChangePage() {
         const result: UpdateDocumentationResponse = await res.json();
         
         if (result.failed > 0 && result.failed_items) {
-          // Some items failed, update response to show only failed items
-          const newResponse: EditDocumentationResponse = {
-            edit: result.failed_items.edit?.map(editWithOriginal => ({
-              document_id: editWithOriginal.document_id,
-              changes: editWithOriginal.changes,
-              version: editWithOriginal.version
-            })) || [],
-            create: result.failed_items.create || []
-          };
-          setResponse(newResponse);
+          // Some items failed, preserve unrelated changes and merge failed items
+          const currentResponse = response;
+          if (currentResponse) {
+            const newResponse = { ...currentResponse };
+            
+            // Get IDs of changes that were part of this request
+            const requestedEditIds = new Set(
+              editsToApply.map(edit => edit.document_id)
+            );
+            const requestedCreateIds = new Set(
+              createstoApply.map(create => createChangeIds.get(create) || '')
+            );
+            
+            // Remove successfully applied edits (requested but not in failed_items)
+            if (newResponse.edit) {
+              newResponse.edit = newResponse.edit.filter(edit => {
+                const wasRequested = requestedEditIds.has(edit.document_id);
+                const isFailed = result.failed_items?.edit?.some(failed => failed.document_id === edit.document_id);
+                return !wasRequested || isFailed; // Keep if not requested OR if failed
+              });
+            }
+            
+            // Remove successfully applied creates (requested but not in failed_items)
+            if (newResponse.create) {
+              newResponse.create = newResponse.create.filter(create => {
+                const createId = createChangeIds.get(create) || '';
+                const wasRequested = requestedCreateIds.has(createId);
+                const isFailed = result.failed_items?.create?.some(failed => {
+                  const failedId = createChangeIds.get(failed) || '';
+                  return failedId === createId;
+                });
+                return !wasRequested || isFailed; // Keep if not requested OR if failed
+              });
+            }
+            
+            setResponse(newResponse);
+          }
           
-          // Update document contents for failed items only
-          if (result.failed_items.edit) {
-            const newDocumentContents = new Map<string, OriginalContent>();
-            for (const edit of result.failed_items.edit) {
-              if (edit.original_content) {
-                newDocumentContents.set(edit.document_id, edit.original_content);
+          // Update document contents - merge with existing, update failed items
+          setDocumentContents(prev => {
+            const updated = new Map(prev);
+            
+            // Remove successful items from documentContents
+            editsToApply.forEach(edit => {
+              const isFailed = result.failed_items?.edit?.some(failed => failed.document_id === edit.document_id);
+              if (!isFailed) {
+                updated.delete(edit.document_id);
+              }
+            });
+            
+            // Update failed items with fresh original content
+            if (result.failed_items?.edit) {
+              for (const edit of result.failed_items.edit) {
+                if (edit.original_content) {
+                  updated.set(edit.document_id, edit.original_content);
+                }
               }
             }
-            setDocumentContents(newDocumentContents);
-          }
+            
+            return updated;
+          });
           
           // If some items were successful, invalidate cache
           if (result.successful > 0) {
             invalidateDocumentCache();
           }
           
-          // Clear selection since we're showing new set
-          setSelectedChanges(new Set());
+          // Update selection to only remove successfully applied changes
+          setSelectedChanges(prev => {
+            const updated = new Set(prev);
+            
+            // Remove successful edits from selection
+            editsToApply.forEach(edit => {
+              const isFailed = result.failed_items?.edit?.some(failed => failed.document_id === edit.document_id);
+              if (!isFailed) {
+                updated.delete(edit.document_id);
+              }
+            });
+            
+            // Remove successful creates from selection
+            createstoApply.forEach(create => {
+              const createId = createChangeIds.get(create) || '';
+              const isFailed = result.failed_items?.create?.some(failed => {
+                const failedId = createChangeIds.get(failed) || '';
+                return failedId === createId;
+              });
+              if (!isFailed && createId) {
+                updated.delete(createId);
+              }
+            });
+            
+            return updated;
+          });
           
           toast({
             title: 'Partial Success',
