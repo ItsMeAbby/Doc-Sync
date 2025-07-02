@@ -44,7 +44,7 @@ export function DocumentChangeCard({
   disabled = false,
 }: DocumentChangeCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [viewMode, setViewMode] = useState<"inline" | "split">("inline");
+  const [viewMode, setViewMode] = useState<"inline" | "split">("split");
 
   const isEdit = type === "edit";
   const editChange = change as DocumentEdit;
@@ -168,31 +168,14 @@ export function DocumentChangeCard({
       {isExpanded && (
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
-                <TabsList>
-                  <TabsTrigger value="inline" className="gap-2">
-                    <Code className="h-4 w-4" />
-                    Inline
-                  </TabsTrigger>
-                  <TabsTrigger value="split" className="gap-2">
-                    <Eye className="h-4 w-4" />
-                    Split
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-
             <div className="border rounded-lg overflow-hidden">
               {isEdit ? (
-                <div className="max-h-96 overflow-y-auto">
-                  <DiffViewer
-                    oldContent={originalContent?.markdown_content || ''}
-                    newContent={applyChangesToContent(originalContent?.markdown_content || '', editChange.changes)}
-                    viewMode={viewMode}
-                    className="p-4"
-                  />
-                </div>
+                <DiffViewer
+                  oldContent={originalContent?.markdown_content || ''}
+                  newContent={applyChangesToContent(originalContent?.markdown_content || '', editChange.changes)}
+                  viewMode={viewMode}
+                  className="p-4"
+                />
               ) : (
                 <Tabs defaultValue="en" className="w-full">
                   <TabsList className="w-full justify-start rounded-none border-b">
@@ -200,24 +183,20 @@ export function DocumentChangeCard({
                     <TabsTrigger value="ja">Japanese</TabsTrigger>
                   </TabsList>
                   <TabsContent value="en" className="m-0">
-                    <div className="max-h-96 overflow-y-auto">
-                      <DiffViewer
-                        oldContent=""
-                        newContent={createChange.markdown_content_en}
-                        viewMode={viewMode}
-                        className="p-4"
-                      />
-                    </div>
+                    <DiffViewer
+                      oldContent=""
+                      newContent={createChange.markdown_content_en}
+                      viewMode={viewMode}
+                      className="p-4"
+                    />
                   </TabsContent>
                   <TabsContent value="ja" className="m-0">
-                    <div className="max-h-96 overflow-y-auto">
-                      <DiffViewer
-                        oldContent=""
-                        newContent={createChange.markdown_content_ja}
-                        viewMode={viewMode}
-                        className="p-4"
-                      />
-                    </div>
+                    <DiffViewer
+                      oldContent=""
+                      newContent={createChange.markdown_content_ja}
+                      viewMode={viewMode}
+                      className="p-4"
+                    />
                   </TabsContent>
                 </Tabs>
               )}
