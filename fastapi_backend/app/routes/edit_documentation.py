@@ -75,16 +75,16 @@ def validate_delete_item(doc: DocumentToDelete) -> Optional[str]:
 async def delete_document(document_id: str) -> bool:
     """Delete a document by marking it as deleted. Returns True if successful."""
     try:
-        # # Mark document as deleted (soft delete)
-        # result = supabase.table("documents").update(
-        #     {"is_deleted": True}
-        # ).eq("id", document_id).execute()
+        # Mark document as deleted (soft delete)
+        result = supabase.table("documents").update(
+            {"is_deleted": True}
+        ).eq("id", document_id).execute()
         
-        # if not result.data:
-        #     logger.error(f"Document {document_id} not found for deletion")
-        #     return False
+        if not result.data:
+            logger.error(f"Document {document_id} not found for deletion")
+            return False
             
-        # logger.info(f"Document {document_id} marked as deleted")
+        logger.info(f"Document {document_id} marked as deleted")
         return True
         
     except Exception as e:
