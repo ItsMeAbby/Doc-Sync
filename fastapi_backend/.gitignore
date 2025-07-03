@@ -1,1 +1,7 @@
 .vercel
+
+# Coverage reports
+htmlcov/
+coverage.xml
+.coverage
+.coverage.*

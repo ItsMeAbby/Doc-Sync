@@ -501,24 +501,30 @@ class TestDocuments:
     async def test_get_all_documents_with_filters(self, test_client, mock_document_service):
         """Test getting all documents with query parameters."""
         expected_response = {
-            "documentation": [],
-            "api_references": [
-                {
-                    "id": str(uuid.uuid4()),
-                    "title": "API Reference Doc",
-                    "path": "/api/ref1",
-                    "name": "api-ref1",
-                    "is_api_ref": True,
-                    "parent_id": None,
-                    "is_deleted": False,
-                    "created_at": datetime.now().isoformat(),
-                    "current_version_id": None,
-                    "markdown_content": "# API Reference",
-                    "language": "en",
-                    "keywords_array": ["api", "reference"],
-                    "children": []
-                }
-            ]
+            "en": {
+                "documentation": [],
+                "api_references": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "title": "API Reference Doc",
+                        "path": "/api/ref1",
+                        "name": "api-ref1",
+                        "is_api_ref": True,
+                        "parent_id": None,
+                        "is_deleted": False,
+                        "created_at": datetime.now().isoformat(),
+                        "current_version_id": None,
+                        "markdown_content": "# API Reference",
+                        "language": "en",
+                        "keywords_array": ["api", "reference"],
+                        "children": []
+                    }
+                ]
+            },
+            "ja": {
+                "documentation": [],
+                "api_references": []
+            }
         }
         mock_document_service.get_all_documents.return_value = expected_response
         
@@ -528,10 +534,12 @@ class TestDocuments:
         # Verify response
         assert response.status_code == status.HTTP_200_OK
         all_docs = response.json()
-        assert "documentation" in all_docs
-        assert "api_references" in all_docs
-        assert len(all_docs["documentation"]) == 0
-        assert len(all_docs["api_references"]) == 1
+        assert "en" in all_docs
+        assert "ja" in all_docs
+        assert "documentation" in all_docs["en"]
+        assert "api_references" in all_docs["en"]
+        assert len(all_docs["en"]["documentation"]) == 0
+        assert len(all_docs["en"]["api_references"]) == 1
         
         # Verify service was called with correct parameters
         mock_document_service.get_all_documents.assert_called_once_with(False, True, None)
@@ -634,24 +642,30 @@ class TestDocuments:
     async def test_get_all_documents(self, test_client, mock_document_service):
         """Test getting all documents with filters."""
         expected_response = {
-            "documentation": [
-                {
-                    "id": str(uuid.uuid4()),
-                    "title": "Documentation 1",
-                    "path": "/docs/doc1",
-                    "name": "doc-1",
-                    "is_api_ref": False,
-                    "parent_id": None,
-                    "is_deleted": False,
-                    "created_at": datetime.now().isoformat(),
-                    "current_version_id": None,
-                    "markdown_content": "# Documentation 1",
-                    "language": "en",
-                    "keywords_array": ["docs", "api"],
-                    "children": []
-                }
-            ],
-            "api_references": []
+            "en": {
+                "documentation": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "title": "Documentation 1",
+                        "path": "/docs/doc1",
+                        "name": "doc-1",
+                        "is_api_ref": False,
+                        "parent_id": None,
+                        "is_deleted": False,
+                        "created_at": datetime.now().isoformat(),
+                        "current_version_id": None,
+                        "markdown_content": "# Documentation 1",
+                        "language": "en",
+                        "keywords_array": ["docs", "api"],
+                        "children": []
+                    }
+                ],
+                "api_references": []
+            },
+            "ja": {
+                "documentation": [],
+                "api_references": []
+            }
         }
         mock_document_service.get_all_documents.return_value = expected_response
         
@@ -661,9 +675,11 @@ class TestDocuments:
         # Verify response
         assert response.status_code == status.HTTP_200_OK
         result = response.json()
-        assert "documentation" in result
-        assert "api_references" in result
-        assert len(result["documentation"]) == 1
+        assert "en" in result
+        assert "ja" in result
+        assert "documentation" in result["en"]
+        assert "api_references" in result["en"]
+        assert len(result["en"]["documentation"]) == 1
         
         # Verify service was called with defaults
         mock_document_service.get_all_documents.assert_called_once_with(False, None, None)

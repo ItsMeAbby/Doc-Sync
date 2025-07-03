@@ -12,14 +12,22 @@ help:
 	@awk '/^[a-zA-Z_-]+:/{split($$1, target, ":"); print "  " target[1] "\t" substr($$0, index($$0,$$2))}' $(MAKEFILE_LIST)
 
 # Backend commands
-.PHONY: start-backend test-backend
+.PHONY: start-backend test-backend test-backend-coverage coverage-report coverage-html
 
 start-backend: ## Start the backend server with FastAPI and hot reload
 	cd $(BACKEND_DIR) && ./start.sh
 
 test-backend: ## Run backend tests using pytest
-	cd $(BACKEND_DIR) && uv run pytest
+	cd $(BACKEND_DIR) && uv run pytest -vv --disable-warnings 
 
+test-backend-coverage: ## Run backend tests with detailed coverage report add branch coverage
+	cd $(BACKEND_DIR) && uv run pytest -vv --disable-warnings --cov=app --cov-report=term-missing --cov-report=html --cov-report=xml --cov-fail-under=50 --cov-branch
+
+coverage-report: ## Generate and display coverage report
+	cd $(BACKEND_DIR) && uv run coverage report
+
+coverage-html: ## Generate HTML coverage report and open it
+	cd $(BACKEND_DIR) && uv run coverage html && open htmlcov/index.html	
 
 # Frontend commands
 .PHONY: start-frontend test-frontend

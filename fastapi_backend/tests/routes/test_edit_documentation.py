@@ -39,10 +39,8 @@ class TestEditDocumentation:
                     "document_id": request_data["document_id"],
                     "changes": [
                         {
-                            "type": "update",
-                            "original_content": "Original API documentation",
-                            "new_content": "Enhanced API documentation with examples",
-                            "reasoning": "Added comprehensive examples"
+                            "old_string": "Original API documentation",
+                            "new_string": "Enhanced API documentation with examples"
                         }
                     ],
                     "version": str(uuid.uuid4())
@@ -77,10 +75,8 @@ class TestEditDocumentation:
                     "document_id": doc_id,
                     "changes": [
                         {
-                            "type": "update",
-                            "original_content": "Old content",
-                            "new_content": "New content",
-                            "reasoning": "Content improvement"
+                            "old_string": "Old content",
+                            "new_string": "New content"
                         }
                     ],
                     "version": str(uuid.uuid4()),
@@ -182,7 +178,7 @@ class TestEditDocumentation:
         response = await test_client.post("/api/edit/", json=request_data)
 
         # Verify error response
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
         error = response.json()
         assert "detail" in error
 
@@ -198,10 +194,8 @@ class TestEditDocumentation:
                     "document_id": doc1_id,
                     "changes": [
                         {
-                            "type": "update",
-                            "original_content": "Content 1",
-                            "new_content": "Updated content 1",
-                            "reasoning": "Update 1"
+                            "old_string": "Content 1",
+                            "new_string": "Updated content 1"
                         }
                     ],
                     "version": str(uuid.uuid4())
@@ -210,10 +204,8 @@ class TestEditDocumentation:
                     "document_id": doc2_id,
                     "changes": [
                         {
-                            "type": "update",
-                            "original_content": "Content 2",
-                            "new_content": "Updated content 2",
-                            "reasoning": "Update 2"
+                            "old_string": "Content 2", 
+                            "new_string": "Updated content 2"
                         }
                     ],
                     "version": str(uuid.uuid4())
@@ -234,10 +226,8 @@ class TestEditDocumentation:
                         "document_id": doc2_id,
                         "changes": [
                             {
-                                "type": "update",
-                                "original_content": "Content 2",
-                                "new_content": "Updated content 2",
-                                "reasoning": "Update 2"
+                                "old_string": "Content 2",
+                                "new_string": "Updated content 2"
                             }
                         ],
                         "version": str(uuid.uuid4())
