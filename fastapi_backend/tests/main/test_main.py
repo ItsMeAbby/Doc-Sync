@@ -13,4 +13,4 @@ class TestMainAPI:
         openapi_schema = response.json()
         assert "openapi" in openapi_schema
         assert "paths" in openapi_schema
-        assert "/items/" in openapi_schema["paths"]
+        assert "/api/documents/" in openapi_schema["paths"]
