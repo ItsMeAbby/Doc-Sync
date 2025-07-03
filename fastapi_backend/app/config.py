@@ -2,7 +2,7 @@ from typing import Set, List
 import json
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
+import os
 
 class Settings(BaseSettings):
     # OpenAPI docs
@@ -43,3 +43,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY

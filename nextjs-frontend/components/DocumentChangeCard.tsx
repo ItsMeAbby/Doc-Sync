@@ -105,21 +105,22 @@ export function DocumentChangeCard({
 
   return (
     <Card className={cn("transition-all", disabled && "opacity-50")}>
-      <CardHeader className="space-y-2">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 flex-1">
+      <CardHeader className="space-y-3">
+        {/* Mobile and tablet layout: Stack vertically for smaller screens */}
+        <div className="block lg:hidden space-y-3">
+          <div className="flex items-start gap-3">
             <Checkbox
               checked={isSelected}
               onCheckedChange={onSelectionChange}
               disabled={disabled}
-              className="mt-1"
+              className="mt-1 flex-shrink-0"
             />
-            <div className="flex-1 space-y-2">
-              <div className="flex items-center gap-2">
+            <div className="flex-1 space-y-2 min-w-0">
+              <div className="flex items-start gap-2">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="p-0 h-auto"
+                  className="p-0 h-auto flex-shrink-0"
                   onClick={() => setIsExpanded(!isExpanded)}
                 >
                   {isExpanded ? (
@@ -129,27 +130,101 @@ export function DocumentChangeCard({
                   )}
                 </Button>
                 {isEdit ? (
-                  <FileEdit className="h-4 w-4 text-blue-500" />
+                  <FileEdit className="h-4 w-4 text-blue-500 flex-shrink-0" />
                 ) : (
-                  <FilePlus className="h-4 w-4 text-green-500" />
+                  <FilePlus className="h-4 w-4 text-green-500 flex-shrink-0" />
                 )}
-                <CardTitle className="text-base font-medium">
-                  {getTitle()}
-                </CardTitle>
-                <Badge variant={isEdit ? "secondary" : "default"}>
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-sm font-medium break-words leading-tight">
+                    {getTitle()}
+                  </CardTitle>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1 ml-10">
+                <Badge variant={isEdit ? "secondary" : "default"} className="text-xs px-1.5 py-0.5">
                   {isEdit ? "Edit" : "Create"}
                 </Badge>
-                <Badge variant="outline">
+                <Badge variant="outline" className="text-xs px-1.5 py-0.5">
                   {getChangeCount()} {getChangeCount() === 1 ? "change" : "changes"}
                 </Badge>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Folder className="h-3 w-3" />
-                <span className="font-mono">{getPath()}</span>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground ml-10">
+                <Folder className="h-3 w-3 flex-shrink-0" />
+                <span className="font-mono break-all text-xs">{getPath()}</span>
               </div>
             </div>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-2 pl-11">
+            <Button
+              size="sm"
+              variant="default"
+              onClick={onApply}
+              disabled={disabled}
+              className="gap-1 flex-1 text-xs h-8"
+            >
+              <Check className="h-3 w-3" />
+              Apply
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onIgnore}
+              disabled={disabled}
+              className="gap-1 flex-1 text-xs h-8"
+            >
+              <X className="h-3 w-3" />
+              Ignore
+            </Button>
+          </div>
+        </div>
+
+        {/* Desktop layout: Single row for large screens */}
+        <div className="hidden lg:flex lg:items-start lg:justify-between lg:gap-4">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={onSelectionChange}
+              disabled={disabled}
+              className="mt-1 flex-shrink-0"
+            />
+            <div className="flex-1 space-y-2 min-w-0">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-0 h-auto flex-shrink-0"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+                {isEdit ? (
+                  <FileEdit className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                ) : (
+                  <FilePlus className="h-4 w-4 text-green-500 flex-shrink-0" />
+                )}
+                <CardTitle className="text-base font-medium break-words flex-1 min-w-0">
+                  {getTitle()}
+                </CardTitle>
+                <div className="flex gap-1 flex-shrink-0">
+                  <Badge variant={isEdit ? "secondary" : "default"}>
+                    {isEdit ? "Edit" : "Create"}
+                  </Badge>
+                  <Badge variant="outline">
+                    {getChangeCount()} {getChangeCount() === 1 ? "change" : "changes"}
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Folder className="h-3 w-3 flex-shrink-0" />
+                <span className="font-mono break-all">{getPath()}</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-1 flex-shrink-0">
             <Button
               size="sm"
               variant="default"
