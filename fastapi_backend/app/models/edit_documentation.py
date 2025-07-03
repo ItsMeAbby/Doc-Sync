@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from app.services.agents.create_content_agent import GeneratedDocument
 from app.services.agents.editor_agent import DocumentEdit, ContentChange
+from app.services.agents.delete_content_agent import DocumentToDelete
 
 class EditDocumentationRequest(BaseModel):
     query: str
@@ -17,6 +18,10 @@ class EditDocumentationResponse(BaseModel):
     create: Optional[List[GeneratedDocument]] = Field(
         default=[],
         description="List of newly created documents based on the query."
+    )
+    delete: Optional[List[DocumentToDelete]] = Field(
+        default=[],
+        description="List of documents identified for deletion based on the query."
     )
 
 # Create OriginalContent model for storing original document content

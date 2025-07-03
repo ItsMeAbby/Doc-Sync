@@ -22,9 +22,17 @@ export interface GeneratedDocument {
   markdown_content_ja: string;
 }
 
+export interface DocumentToDelete {
+  document_id: string;
+  version: string;
+  title: string;
+  path: string;
+
+}
 export interface EditDocumentationResponse {
   edit?: DocumentEdit[];
   create?: GeneratedDocument[];
+  delete?: DocumentToDelete[];
 }
 
 export interface EditDocumentationRequest {

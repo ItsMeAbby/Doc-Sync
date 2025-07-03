@@ -181,7 +181,6 @@ From the user's query, identify which documents they want to delete by looking f
 - Document paths
 - Document names
 - Document titles
-- Document keywords
 
 
 - Keywords or content descriptions
@@ -191,9 +190,16 @@ For each document that matches the user's deletion request, return:
 - document_id: The unique identifier
 - title: The document title
 - path: The document path in the documentation tree
+- version: The version ID of the document
 
 ## Matching Rules:
 - Be flexible with matching (partial matches are okay)
+- Use document titles, paths, and summaries to identify matches
+- If multiple documents match, return all of them
+- If no documents match, return an empty list
+- If the user specifies a document by name or path, prioritize that exact match
+- If the user specifies a document by title, match it against the titles of the documents
+- If the user specifies a document by path, match it against the paths of the documents
 - Include both English and Japanese versions of the same document(both will have same path)
 - Include both API reference and regular docs if they match
 

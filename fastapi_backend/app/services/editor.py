@@ -1,6 +1,7 @@
 from app.services.agents.edit_suggestion_agent import EditAgentResponse, edit_suggestion_agent
 from app.services.agents.editor_agent import DocumentEdit, edit_content_agent, Edits
 from app.services.agents.intent_detection_agent import Detected_Intent, intent_agent
+from app.services.agents.delete_content_agent import delete_content_agent, DocumentToDelete,DeleteContentResponse
 from app.services.agents.create_content_agent import CreateContentResponse, GeneratedDocument, create_content_agent
 from agents import Runner,set_default_openai_key,set_tracing_disabled
 from app.config import settings
@@ -13,6 +14,7 @@ class MainEditor:
         self.query = query
         self.edit_changes: list[DocumentEdit] = []
         self.create_documents: list[GeneratedDocument] = []
+        self.delete_documents : list[DocumentToDelete] = []
 
     async def run(self) -> EditDocumentationResponse:
         """
@@ -27,10 +29,13 @@ class MainEditor:
                 await self._handle_edit_intent(intent)
             elif intent.intent == "create":
                 await self._handle_create_intent(intent)
+            elif intent.intent == "delete":
+                await self._handle_delete_intent(intent)
         
         return EditDocumentationResponse(
             edit=self.edit_changes,
-            create=self.create_documents
+            create=self.create_documents,
+            delete=self.delete_documents
         )
 
     async def _handle_edit_intent(self, intent) -> None:
@@ -60,6 +65,20 @@ class MainEditor:
         # Add the generated documents to the output
         self.create_documents.extend(created_documents.documents)
     
+    async def _handle_delete_intent(self, intent) -> None:
+        """
+        Handle delete intent by running delete content agent.
+        """
+        delete_content_agent_response = await Runner.run(delete_content_agent,
+            f"User query: {self.query} Task: {intent.task} Reason: {intent.reason}. Identify documents to delete based on the task"
+        )
+        delete_response = delete_content_agent_response.final_output_as(DeleteContentResponse)
+        
+        if delete_response.documents_to_delete:
+            self.delete_documents.extend(delete_response.documents_to_delete)
+            print(f"Documents to delete: {len(delete_response.documents_to_delete)}")
+        else:
+            print("No documents identified for deletion.")
     async def _get_edit_suggestions(self, intent) -> EditAgentResponse:
         """
         Get edit suggestions from the edit suggestion agent.

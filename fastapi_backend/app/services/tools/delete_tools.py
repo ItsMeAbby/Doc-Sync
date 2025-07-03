@@ -40,7 +40,6 @@ async def get_documents_for_deletion_analysis(
                     version,
                     summary,
                     language,
-                    keywords_array,
                     urls_array
                 )
             """)

@@ -221,6 +221,56 @@ export default function DocumentationChangePage() {
       "markdown_content_en": "# Depreciated Items in OpenAI Agents SDK\n\nThis page provides a list of features and items in the OpenAI Agents SDK that have been **depreciated** (no longer recommended for use and subject to removal in future releases). Please review this page regularly to ensure your implementation is following the latest recommended practices.\n\n## as_tool Agent Usage (Depreciated)\n\nPreviously, agents could be used with the `as_tool` functionality. **This is no longer supported.**\n\n- **Deprecated Feature**: Using agents as tools via `as_tool`.\n- **Migration Path**: If you need to invoke one agent from another, you should use the `handoff` mechanism.\n\n### Example of Deprecated Pattern\n```python\n# This pattern is no longer supported\nmy_agent = get_agent(...)\nother_agent = get_agent(...)\nresult = my_agent.as_tool(other_agent)\n```\n\n### Recommended Approach\nUse `handoff` to interact between agents:\n```python\nmy_agent = get_agent(...)\nother_agent = get_agent(...)\nresult = my_agent.handoff(other_agent, ...)\n```\n\nFor more on handing off work between agents, see the [Handoffs Guide](handoffs/).\n\n---\n\n## Why Items Are Depreciated\nItems and features may be depreciated due to:\n- Improved or safer alternatives\n- Security vulnerabilities\n- Architectural changes in the SDK\n\n## What to Do If You Are Using a Depreciated Item\n- Update your code as soon as possible to use supported patterns.\n- Reach out via the SDK community or support channels for migration help.",
       "markdown_content_ja": "# OpenAI Agents SDK における非推奨項目\n\nこのページでは、OpenAI Agents SDK で**非推奨（depreciated）**となった機能・項目の一覧をまとめています。今後のバージョンで削除される可能性があるため、最新の推奨事項に従った実装を行うよう、定期的に本ページをご確認ください。\n\n## as_tool エージェント利用（非推奨）\n\n以前はエージェントを `as_tool` 機能で利用できましたが、**現在はサポートされていません。**\n\n- **非推奨機能**: `as_tool` を使ったエージェントのツール化\n- **移行方法**: 他のエージェントを呼び出す際は `handoff` 機構を利用してください。\n\n### 非推奨パターンの例\n```python\n# このパターンはサポートされていません\nmy_agent = get_agent(...)\nother_agent = get_agent(...)\nresult = my_agent.as_tool(other_agent)\n```\n\n### 推奨される方法\nエージェント間のやり取りには `handoff` を使います：\n```python\nmy_agent = get_agent(...)\nother_agent = get_agent(...)\nresult = my_agent.handoff(other_agent, ...)\n```\n\nエージェント間のハンドオフの詳細については[ハンドオフガイド](handoffs/)をご参照ください。\n\n---\n\n## なぜ非推奨となるのか\n以下の理由などにより項目が非推奨になることがあります：\n- より良い、または安全な代替手段の登場\n- セキュリティ上の脆弱性\n- SDK のアーキテクチャ変更\n\n## 非推奨項目を利用している場合\n- できるだけ早くサポートされている方法にコードを更新してください。\n- 移行サポートが必要な場合はコミュニティやサポート窓口までご連絡ください。"
     }
+  ],
+  "delete": [
+    {
+      "document_id": "4152bef4-1b77-4213-92bb-0f3bf94916f0",
+      "title": "Handoffs - OpenAI Agents SDK",
+      "path": "handoffs/",
+      "version": "b7eedc4e-d7f5-4565-9f7c-61e1b5e5ea08"
+    },
+    {
+      "document_id": "d3de75f1-cb21-4008-8ab5-87631f1463bd",
+      "title": "Handoffs - OpenAI Agents SDK",
+      "path": "handoffs/",
+      "version": "e48fd93c-f4d8-4192-a887-8a3996b8bff8"
+    },
+    {
+      "document_id": "1dd6408d-5d8f-4a13-b34f-08b02cbbfa3d",
+      "title": "ハンドオフ - OpenAI Agents SDK",
+      "path": "handoffs/",
+      "version": "1766cf1f-136c-46be-8b0f-f352ed829ae7"
+    },
+    {
+      "document_id": "d123c732-7f44-4cf0-aafb-13c5bb160bc6",
+      "title": "Handoffs - OpenAI Agents SDK",
+      "path": "handoffs/",
+      "version": "8e83d392-da47-49eb-8bc8-27a1130e40c7"
+    },
+    {
+      "document_id": "72935889-8865-43ff-9146-61c6959eb4cc",
+      "title": "Handoff prompt - OpenAI Agents SDK",
+      "path": "extensions/handoff_prompt/",
+      "version": "d80cffc8-1b69-4e15-beb6-acd1b6155ac1"
+    },
+    {
+      "document_id": "cf812a85-87b6-45ef-902b-0df222fea272",
+      "title": "Handoff prompt - OpenAI Agents SDK",
+      "path": "extensions/handoff_prompt/",
+      "version": "ffefe82d-8ccf-4654-b3b1-54844ce3fcd1"
+    },
+    {
+      "document_id": "75639e08-1e2a-45d3-8bb7-b6587eaa9413",
+      "title": "Handoff filters - OpenAI Agents SDK",
+      "path": "extensions/handoff_filters/",
+      "version": "596abcdc-7a6b-486f-8f25-e42de9dec90e"
+    },
+    {
+      "document_id": "11b7419e-4ff2-4f5d-bea2-9c3a6253817d",
+      "title": "Handoff filters - OpenAI Agents SDK",
+      "path": "extensions/handoff_filters/",
+      "version": "73628cd3-d344-4eb0-b24f-061aff6f8235"
+    }
   ]
 }
       setResponse(data);

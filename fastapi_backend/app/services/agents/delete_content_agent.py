@@ -19,6 +19,8 @@ class DocumentToDelete(BaseModel):
     """The title of the document."""
     path: str
     """The path of the document in the documentation tree."""
+    version: str
+    """The version id of the document."""
 
 class DeleteContentResponse(BaseModel):
     """
