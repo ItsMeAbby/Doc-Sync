@@ -8,9 +8,9 @@ from app.services.shared.tools import (
     PathListResponse,
     DocumentDetailResponse,
     DatabaseTool,
-    get_document_by_version,
-    get_all_document_paths,
-    search_similar_documents
+    get_document_by_version_core,
+    get_all_document_paths_core,
+    search_similar_documents_core
 )
 
 
@@ -265,7 +265,7 @@ class TestFunctionTools:
         mock_document = Document(id="test-id", title="Test Document")
         mock_db_tool.return_value = mock_document
         
-        result = await get_document_by_version("test-id", "1.0")
+        result = await get_document_by_version_core("test-id", "1.0")
         
         assert isinstance(result, DocumentDetailResponse)
         assert result.success is True
@@ -280,7 +280,7 @@ class TestFunctionTools:
         """Test get_document_by_version function tool error"""
         mock_db_tool.side_effect = Exception("Database error")
         
-        result = await get_document_by_version("test-id", "1.0")
+        result = await get_document_by_version_core("test-id", "1.0")
         
         assert isinstance(result, DocumentDetailResponse)
         assert result.success is False
@@ -297,7 +297,7 @@ class TestFunctionTools:
         ]
         mock_db_tool.return_value = mock_paths
         
-        result = await get_all_document_paths(is_api_ref=True)
+        result = await get_all_document_paths_core(is_api_ref=True)
         
         assert isinstance(result, PathListResponse)
         assert result.success is True
@@ -312,7 +312,7 @@ class TestFunctionTools:
         """Test get_all_document_paths function tool error"""
         mock_db_tool.side_effect = Exception("Database error")
         
-        result = await get_all_document_paths()
+        result = await get_all_document_paths_core()
         
         assert isinstance(result, PathListResponse)
         assert result.success is False
@@ -329,7 +329,7 @@ class TestFunctionTools:
         ]
         mock_db_tool.return_value = mock_documents
         
-        result = await search_similar_documents("test query", limit=5)
+        result = await search_similar_documents_core("test query", limit=5)
         
         assert isinstance(result, DocumentListResponse)
         assert result.success is True
@@ -344,7 +344,7 @@ class TestFunctionTools:
         """Test search_similar_documents function tool error"""
         mock_db_tool.side_effect = Exception("Search error")
         
-        result = await search_similar_documents("test query")
+        result = await search_similar_documents_core("test query")
         
         assert isinstance(result, DocumentListResponse)
         assert result.success is False

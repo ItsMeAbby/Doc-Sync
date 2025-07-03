@@ -151,9 +151,8 @@ class DatabaseTool:
             raise ValueError(f"Error searching documents: {str(e)}")
 
 
-# Function tools for agents using the consolidated database tool
-@function_tool
-async def get_document_by_version(document_id: str, version: str) -> DocumentDetailResponse:
+# Core functions for testing (not decorated)
+async def get_document_by_version_core(document_id: str, version: str) -> DocumentDetailResponse:
     """
     Get a specific version of a document by ID and version.
     
@@ -179,8 +178,7 @@ async def get_document_by_version(document_id: str, version: str) -> DocumentDet
         )
 
 
-@function_tool
-async def get_all_document_paths(is_api_ref: bool = False) -> PathListResponse:
+async def get_all_document_paths_core(is_api_ref: bool = False) -> PathListResponse:
     """
     Get all document paths to check what already exists.
     
@@ -205,8 +203,7 @@ async def get_all_document_paths(is_api_ref: bool = False) -> PathListResponse:
         )
 
 
-@function_tool
-async def search_similar_documents(query: str, limit: int = 10) -> DocumentListResponse:
+async def search_similar_documents_core(query: str, limit: int = 10) -> DocumentListResponse:
     """
     Search for documents similar to the given query using semantic search.
     
@@ -230,3 +227,48 @@ async def search_similar_documents(query: str, limit: int = 10) -> DocumentListR
             message=str(e),
             documents=[]
         )
+
+
+# Function tools for agents using the consolidated database tool
+@function_tool
+async def get_document_by_version(document_id: str, version: str) -> DocumentDetailResponse:
+    """
+    Get a specific version of a document by ID and version.
+    
+    Args:
+        document_id: The ID of the document
+        version: The version number of the document
+    
+    Returns:
+        DocumentDetailResponse with the document data
+    """
+    return await get_document_by_version_core(document_id, version)
+
+
+@function_tool
+async def get_all_document_paths(is_api_ref: bool = False) -> PathListResponse:
+    """
+    Get all document paths to check what already exists.
+    
+    Args:
+        is_api_ref: Filter by API reference documents
+    
+    Returns:
+        PathListResponse with list of document paths
+    """
+    return await get_all_document_paths_core(is_api_ref)
+
+
+@function_tool
+async def search_similar_documents(query: str, limit: int = 10) -> DocumentListResponse:
+    """
+    Search for documents similar to the given query using semantic search.
+    
+    Args:
+        query: The search query
+        limit: Maximum number of documents to return
+    
+    Returns:
+        DocumentListResponse with similar documents
+    """
+    return await search_similar_documents_core(query, limit)
