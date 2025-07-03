@@ -7,18 +7,20 @@ import { cn } from "@/lib/utils";
 import { 
   FileEdit, 
   FilePlus, 
+  FileX,
   CheckCircle2,
   XCircle,
   Filter
 } from "lucide-react";
 
-export type ChangeType = "edit" | "create" | "all";
+export type ChangeType = "edit" | "create" | "delete" | "all";
 
 interface ChangeTypeFilterProps {
   activeFilter: ChangeType;
   onFilterChange: (filter: ChangeType) => void;
   editCount: number;
   createCount: number;
+  deleteCount: number;
   selectedCount: number;
   onApply: () => void;
   onIgnore: () => void;
@@ -32,6 +34,7 @@ export function ChangeTypeFilter({
   onFilterChange,
   editCount,
   createCount,
+  deleteCount,
   selectedCount,
   onApply,
   onIgnore,
@@ -39,7 +42,7 @@ export function ChangeTypeFilter({
   onDeselectAll,
   disabled = false,
 }: ChangeTypeFilterProps) {
-  const totalCount = editCount + createCount;
+  const totalCount = editCount + createCount + deleteCount;
 
   return (
     <div className="p-4 border-b">
@@ -84,6 +87,19 @@ export function ChangeTypeFilter({
             New Files
             <Badge variant="secondary" className="ml-1 text-[10px] px-1">
               {createCount}
+            </Badge>
+          </Button>
+          <Button
+            variant={activeFilter === "delete" ? "default" : "outline"}
+            size="sm"
+            onClick={() => onFilterChange("delete")}
+            disabled={disabled || deleteCount === 0}
+            className="gap-1 text-xs flex-1 min-w-0"
+          >
+            <FileX className="h-3 w-3" />
+            Delete
+            <Badge variant="secondary" className="ml-1 text-[10px] px-1">
+              {deleteCount}
             </Badge>
           </Button>
         </div>
@@ -183,6 +199,19 @@ export function ChangeTypeFilter({
               New Files
               <Badge variant="secondary" className="ml-1">
                 {createCount}
+              </Badge>
+            </Button>
+            <Button
+              variant={activeFilter === "delete" ? "default" : "outline"}
+              size="sm"
+              onClick={() => onFilterChange("delete")}
+              disabled={disabled || deleteCount === 0}
+              className="gap-2"
+            >
+              <FileX className="h-4 w-4" />
+              Delete
+              <Badge variant="secondary" className="ml-1">
+                {deleteCount}
               </Badge>
             </Button>
           </div>

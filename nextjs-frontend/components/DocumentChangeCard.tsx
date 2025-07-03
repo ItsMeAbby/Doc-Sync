@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { 
   FileEdit, 
   FilePlus, 
+  FileX,
   Check, 
   X, 
   ChevronDown,
@@ -20,11 +21,11 @@ import {
   Folder
 } from "lucide-react";
 import { DiffViewer } from "./DiffViewer";
-import type { DocumentEdit, GeneratedDocument, ContentChange, OriginalContent } from "@/lib/edit-types";
+import type { DocumentEdit, GeneratedDocument, DocumentToDelete, ContentChange, OriginalContent } from "@/lib/edit-types";
 
 interface DocumentChangeCardProps {
-  change: DocumentEdit | GeneratedDocument;
-  type: "edit" | "create";
+  change: DocumentEdit | GeneratedDocument | DocumentToDelete;
+  type: "edit" | "create" | "delete";
   isSelected: boolean;
   onSelectionChange: (selected: boolean) => void;
   onApply: () => void;
@@ -49,21 +50,30 @@ export function DocumentChangeCard({
   const [individualChangesExpanded, setIndividualChangesExpanded] = useState<{[key: number]: boolean}>({});
 
   const isEdit = type === "edit";
+  const isCreate = type === "create";
+  const isDelete = type === "delete";
   const editChange = change as DocumentEdit;
   const createChange = change as GeneratedDocument;
+  const deleteChange = change as DocumentToDelete;
 
   const getTitle = () => {
     if (isEdit) {
       return `Edit: ${originalContent?.title || originalContent?.name || editChange.document_id}`;
     }
-    return `Create: ${createChange.title}`;
+    if (isCreate) {
+      return `Create: ${createChange.title}`;
+    }
+    return `Delete: ${deleteChange.title}`;
   };
 
   const getPath = () => {
     if (isEdit) {
       return originalContent?.path || editChange.document_id;
     }
-    return createChange.path;
+    if (isCreate) {
+      return createChange.path;
+    }
+    return deleteChange.path;
   };
 
   const getChangeCount = () => {
@@ -131,8 +141,10 @@ export function DocumentChangeCard({
                 </Button>
                 {isEdit ? (
                   <FileEdit className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                ) : (
+                ) : isCreate ? (
                   <FilePlus className="h-4 w-4 text-green-500 flex-shrink-0" />
+                ) : (
+                  <FileX className="h-4 w-4 text-red-500 flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <CardTitle className="text-sm font-medium break-words leading-tight">
@@ -141,8 +153,8 @@ export function DocumentChangeCard({
                 </div>
               </div>
               <div className="flex flex-wrap gap-1 ml-10">
-                <Badge variant={isEdit ? "secondary" : "default"} className="text-xs px-1.5 py-0.5">
-                  {isEdit ? "Edit" : "Create"}
+                <Badge variant={isEdit ? "secondary" : isCreate ? "default" : "destructive"} className="text-xs px-1.5 py-0.5">
+                  {isEdit ? "Edit" : isCreate ? "Create" : "Delete"}
                 </Badge>
                 <Badge variant="outline" className="text-xs px-1.5 py-0.5">
                   {getChangeCount()} {getChangeCount() === 1 ? "change" : "changes"}
@@ -203,15 +215,17 @@ export function DocumentChangeCard({
                 </Button>
                 {isEdit ? (
                   <FileEdit className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                ) : (
+                ) : isCreate ? (
                   <FilePlus className="h-4 w-4 text-green-500 flex-shrink-0" />
+                ) : (
+                  <FileX className="h-4 w-4 text-red-500 flex-shrink-0" />
                 )}
                 <CardTitle className="text-base font-medium break-words flex-1 min-w-0">
                   {getTitle()}
                 </CardTitle>
                 <div className="flex gap-1 flex-shrink-0">
-                  <Badge variant={isEdit ? "secondary" : "default"}>
-                    {isEdit ? "Edit" : "Create"}
+                  <Badge variant={isEdit ? "secondary" : isCreate ? "default" : "destructive"}>
+                    {isEdit ? "Edit" : isCreate ? "Create" : "Delete"}
                   </Badge>
                   <Badge variant="outline">
                     {getChangeCount()} {getChangeCount() === 1 ? "change" : "changes"}
@@ -260,7 +274,7 @@ export function DocumentChangeCard({
                   viewMode={viewMode}
                   className="p-4"
                 />
-              ) : (
+              ) : isCreate ? (
                 <Tabs defaultValue="en" className="w-full">
                   <TabsList className="w-full justify-start rounded-none border-b">
                     <TabsTrigger value="en">English</TabsTrigger>
@@ -283,6 +297,26 @@ export function DocumentChangeCard({
                     />
                   </TabsContent>
                 </Tabs>
+              ) : (
+                <div className="p-4 bg-red-50 dark:bg-red-900/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FileX className="h-5 w-5 text-red-500" />
+                    <h4 className="text-lg font-medium text-red-700 dark:text-red-400">
+                      Document to be deleted
+                    </h4>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div><strong>Document ID:</strong> {deleteChange.document_id}</div>
+                    <div><strong>Title:</strong> {deleteChange.title}</div>
+                    <div><strong>Path:</strong> {deleteChange.path}</div>
+                    <div><strong>Version:</strong> {deleteChange.version}</div>
+                  </div>
+                  <div className="mt-3 p-3 bg-red-100 dark:bg-red-900/30 rounded border border-red-200 dark:border-red-800">
+                    <p className="text-red-700 dark:text-red-400 text-sm font-medium">
+                      ⚠️ Warning: This document will be permanently deleted and cannot be recovered.
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
 

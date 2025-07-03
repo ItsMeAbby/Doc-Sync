@@ -55,6 +55,10 @@ class ChangeRequest(BaseModel):
         default=[],
         description="List of newly created documents based on the query"
     )
+    delete: Optional[List[DocumentToDelete]] = Field(
+        default=[],
+        description="List of documents to be deleted"
+    )
 
 class ProcessingError(BaseModel):
     """Error details for failed processing"""

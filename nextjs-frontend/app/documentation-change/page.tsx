@@ -10,7 +10,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { fetchDocumentsWithCache, invalidateDocumentCache } from '@/app/utils/documentCache';
 import { ChangeTypeFilter, ChangeType } from '@/components/ChangeTypeFilter';
 import { DocumentChangeCard } from '@/components/DocumentChangeCard';
-import type { EditDocumentationResponse, DocumentEdit, GeneratedDocument, OriginalContent, ChangeRequest, DocumentEditWithOriginal, UpdateDocumentationResponse } from '@/lib/edit-types';
+import type { EditDocumentationResponse, DocumentEdit, GeneratedDocument, DocumentToDelete, OriginalContent, ChangeRequest, DocumentEditWithOriginal, UpdateDocumentationResponse } from '@/lib/edit-types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AlertDialog,
@@ -305,7 +305,7 @@ export default function DocumentationChangePage() {
     }
   };
 
-  // Generate stable IDs for create changes
+  // Generate stable IDs for create and delete changes
   const createChangeIds = useMemo(() => {
     if (!response?.create) return new Map<GeneratedDocument, string>();
     const ids = new Map<GeneratedDocument, string>();
@@ -315,11 +315,20 @@ export default function DocumentationChangePage() {
     return ids;
   }, [response?.create]);
 
+  const deleteChangeIds = useMemo(() => {
+    if (!response?.delete) return new Map<DocumentToDelete, string>();
+    const ids = new Map<DocumentToDelete, string>();
+    response.delete.forEach((change, index) => {
+      ids.set(change, `delete-${index}`);
+    });
+    return ids;
+  }, [response?.delete]);
+
   // Filter changes based on active filter
   const filteredChanges = useMemo(() => {
     if (!response) return [];
     
-    const allChanges: (DocumentEdit | GeneratedDocument)[] = [];
+    const allChanges: (DocumentEdit | GeneratedDocument | DocumentToDelete)[] = [];
     
     if (activeFilter === 'all' || activeFilter === 'edit') {
       if (response.edit) {
@@ -333,6 +342,12 @@ export default function DocumentationChangePage() {
       }
     }
     
+    if (activeFilter === 'all' || activeFilter === 'delete') {
+      if (response.delete) {
+        allChanges.push(...response.delete);
+      }
+    }
+    
     return allChanges;
   }, [response, activeFilter]);
 
@@ -340,18 +355,32 @@ export default function DocumentationChangePage() {
   const changesToApply = useMemo(() => {
     return filteredChanges.filter((change) => {
       const isEdit = 'changes' in change;
-      const changeId = isEdit ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || '';
+      const isDelete = 'document_id' in change && 'version' in change && !('changes' in change) && !('markdown_content_en' in change);
+      let changeId = '';
+      
+      if (isEdit) {
+        changeId = (change as DocumentEdit).document_id;
+      } else if (isDelete) {
+        changeId = deleteChangeIds.get(change as DocumentToDelete) || '';
+      } else {
+        changeId = createChangeIds.get(change as GeneratedDocument) || '';
+      }
+      
       return selectedChanges.has(changeId);
     });
-  }, [filteredChanges, selectedChanges, createChangeIds]);
+  }, [filteredChanges, selectedChanges, createChangeIds, deleteChangeIds]);
 
-  const getChangeType = (): "edit" | "create" | "mixed" => {
+  const getChangeType = (): "edit" | "create" | "delete" | "mixed" => {
     const hasEdits = changesToApply.some(c => 'changes' in c);
     const hasCreates = changesToApply.some(c => 'markdown_content_en' in c);
+    const hasDeletes = changesToApply.some(c => 'document_id' in c && 'version' in c && !('changes' in c) && !('markdown_content_en' in c));
     
-    if (hasEdits && hasCreates) return 'mixed';
+    const typeCount = [hasEdits, hasCreates, hasDeletes].filter(Boolean).length;
+    if (typeCount > 1) return 'mixed';
+    
     if (hasEdits) return 'edit';
-    return 'create';
+    if (hasCreates) return 'create';
+    return 'delete';
   };
 
   const handleSelectionChange = (changeId: string, selected: boolean) => {
@@ -401,6 +430,15 @@ export default function DocumentationChangePage() {
       );
     }
     
+    if (newResponse.delete) {
+      newResponse.delete = newResponse.delete.filter(
+        (deleteChange: DocumentToDelete) => {
+          const deleteId = deleteChangeIds.get(deleteChange) || '';
+          return !selectedChanges.has(deleteId);
+        }
+      );
+    }
+    
     setResponse(newResponse);
     setSelectedChanges(new Set());
   };
@@ -408,7 +446,15 @@ export default function DocumentationChangePage() {
   const handleSelectAll = () => {
     const allIds = filteredChanges.map((change) => {
       const isEdit = 'changes' in change;
-      return isEdit ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || '';
+      const isDelete = 'document_id' in change && 'version' in change && !('changes' in change) && !('markdown_content_en' in change);
+      
+      if (isEdit) {
+        return (change as DocumentEdit).document_id;
+      } else if (isDelete) {
+        return deleteChangeIds.get(change as DocumentToDelete) || '';
+      } else {
+        return createChangeIds.get(change as GeneratedDocument) || '';
+      }
     }).filter(id => id !== '');
     setSelectedChanges(new Set(allIds));
   };
@@ -417,7 +463,7 @@ export default function DocumentationChangePage() {
     setSelectedChanges(new Set());
   };
 
-  const handleApplySingle = async (change: DocumentEdit | GeneratedDocument, type: 'edit' | 'create') => {
+  const handleApplySingle = async (change: DocumentEdit | GeneratedDocument | DocumentToDelete, type: 'edit' | 'create' | 'delete') => {
     setApplyingChanges(true);
     try {
       let changeRequest: ChangeRequest;
@@ -435,12 +481,20 @@ export default function DocumentationChangePage() {
         
         changeRequest = {
           edit: [editWithOriginal],
-          create: undefined
+          create: undefined,
+          delete: undefined
+        };
+      } else if (type === 'create') {
+        changeRequest = {
+          edit: undefined,
+          create: [change as GeneratedDocument],
+          delete: undefined
         };
       } else {
         changeRequest = {
           edit: undefined,
-          create: [change as GeneratedDocument]
+          create: undefined,
+          delete: [change as DocumentToDelete]
         };
       }
 
@@ -461,7 +515,14 @@ export default function DocumentationChangePage() {
       if (result.failed > 0 && result.failed_items) {
         // Some items failed, preserve unrelated changes and merge failed items
         // Determine the change that was requested (single change)
-        const requestedChangeId = type === 'edit' ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || '';
+        let requestedChangeId = '';
+        if (type === 'edit') {
+          requestedChangeId = (change as DocumentEdit).document_id;
+        } else if (type === 'create') {
+          requestedChangeId = createChangeIds.get(change as GeneratedDocument) || '';
+        } else {
+          requestedChangeId = deleteChangeIds.get(change as DocumentToDelete) || '';
+        }
         
         const currentResponse = response;
         if (currentResponse) {
@@ -474,7 +535,7 @@ export default function DocumentationChangePage() {
               // Success: remove from response
               newResponse.edit = newResponse.edit.filter(edit => edit.document_id !== requestedChangeId);
             }
-          } else {
+          } else if (type === 'create') {
             const isFailed = result.failed_items.create?.some(failed => {
               const failedId = createChangeIds.get(failed) || '';
               return failedId === requestedChangeId;
@@ -484,6 +545,18 @@ export default function DocumentationChangePage() {
               newResponse.create = newResponse.create.filter(create => {
                 const createId = createChangeIds.get(create) || '';
                 return createId !== requestedChangeId;
+              });
+            }
+          } else {
+            const isFailed = result.failed_items.delete?.some(failed => {
+              const failedId = deleteChangeIds.get(failed) || '';
+              return failedId === requestedChangeId;
+            });
+            if (!isFailed && newResponse.delete) {
+              // Success: remove from response
+              newResponse.delete = newResponse.delete.filter(deleteChange => {
+                const deleteId = deleteChangeIds.get(deleteChange) || '';
+                return deleteId !== requestedChangeId;
               });
             }
           }
@@ -527,7 +600,14 @@ export default function DocumentationChangePage() {
         });
       } else {
         // All successful, remove the applied change from response
-        const changeId = type === 'edit' ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || '';
+        let changeId = '';
+        if (type === 'edit') {
+          changeId = (change as DocumentEdit).document_id;
+        } else if (type === 'create') {
+          changeId = createChangeIds.get(change as GeneratedDocument) || '';
+        } else {
+          changeId = deleteChangeIds.get(change as DocumentToDelete) || '';
+        }
         if (changeId) {
           handleIgnoreSingle(changeId);
         }
@@ -566,6 +646,13 @@ export default function DocumentationChangePage() {
           return createId !== changeId;
         });
       }
+    } else if (changeId.startsWith('delete-')) {
+      if (newResponse.delete) {
+        newResponse.delete = newResponse.delete.filter((deleteChange: DocumentToDelete) => {
+          const deleteId = deleteChangeIds.get(deleteChange) || '';
+          return deleteId !== changeId;
+        });
+      }
     } else {
       if (newResponse.edit) {
         newResponse.edit = newResponse.edit.filter((edit: DocumentEdit) => edit.document_id !== changeId);
@@ -597,6 +684,7 @@ export default function DocumentationChangePage() {
         // Handle apply action - call update_documentation endpoint
         const editsToApply = changesToApply.filter(c => 'changes' in c) as DocumentEdit[];
         const createstoApply = changesToApply.filter(c => 'markdown_content_en' in c) as GeneratedDocument[];
+        const deletesToApply = changesToApply.filter(c => 'document_id' in c && 'version' in c && !('changes' in c) && !('markdown_content_en' in c)) as DocumentToDelete[];
         
         // Convert DocumentEdit to DocumentEditWithOriginal
         const editsWithOriginal: DocumentEditWithOriginal[] = editsToApply.map(edit => ({
@@ -608,7 +696,8 @@ export default function DocumentationChangePage() {
         
         const changeRequest: ChangeRequest = {
           edit: editsWithOriginal.length > 0 ? editsWithOriginal : undefined,
-          create: createstoApply.length > 0 ? createstoApply : undefined
+          create: createstoApply.length > 0 ? createstoApply : undefined,
+          delete: deletesToApply.length > 0 ? deletesToApply : undefined
         };
 
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/edit/update_documentation`, {
@@ -638,6 +727,9 @@ export default function DocumentationChangePage() {
             const requestedCreateIds = new Set(
               createstoApply.map(create => createChangeIds.get(create) || '')
             );
+            const requestedDeleteIds = new Set(
+              deletesToApply.map(deleteChange => deleteChangeIds.get(deleteChange) || '')
+            );
             
             // Remove successfully applied edits (requested but not in failed_items)
             if (newResponse.edit) {
@@ -656,6 +748,19 @@ export default function DocumentationChangePage() {
                 const isFailed = result.failed_items?.create?.some(failed => {
                   const failedId = createChangeIds.get(failed) || '';
                   return failedId === createId;
+                });
+                return !wasRequested || isFailed; // Keep if not requested OR if failed
+              });
+            }
+            
+            // Remove successfully applied deletes (requested but not in failed_items)
+            if (newResponse.delete) {
+              newResponse.delete = newResponse.delete.filter(deleteChange => {
+                const deleteId = deleteChangeIds.get(deleteChange) || '';
+                const wasRequested = requestedDeleteIds.has(deleteId);
+                const isFailed = result.failed_items?.delete?.some(failed => {
+                  const failedId = deleteChangeIds.get(failed) || '';
+                  return failedId === deleteId;
                 });
                 return !wasRequested || isFailed; // Keep if not requested OR if failed
               });
@@ -714,6 +819,18 @@ export default function DocumentationChangePage() {
               });
               if (!isFailed && createId) {
                 updated.delete(createId);
+              }
+            });
+            
+            // Remove successful deletes from selection
+            deletesToApply.forEach(deleteChange => {
+              const deleteId = deleteChangeIds.get(deleteChange) || '';
+              const isFailed = result.failed_items?.delete?.some(failed => {
+                const failedId = deleteChangeIds.get(failed) || '';
+                return failedId === deleteId;
+              });
+              if (!isFailed && deleteId) {
+                updated.delete(deleteId);
               }
             });
             
@@ -872,6 +989,7 @@ export default function DocumentationChangePage() {
             onFilterChange={setActiveFilter}
             editCount={response.edit?.length || 0}
             createCount={response.create?.length || 0}
+            deleteCount={response.delete?.length || 0}
             selectedCount={selectedChanges.size}
             onApply={handleApply}
             onIgnore={handleIgnore}
@@ -884,26 +1002,43 @@ export default function DocumentationChangePage() {
             <div className="space-y-4 pt-4">
               {filteredChanges.map((change, index) => {
                 const isEdit = 'changes' in change;
-                const changeId = isEdit ? (change as DocumentEdit).document_id : createChangeIds.get(change as GeneratedDocument) || `create-${index}`;
+                const isDelete = 'document_id' in change && 'version' in change && !('changes' in change) && !('markdown_content_en' in change);
+                
+                let changeId = '';
+                let changeType: 'edit' | 'create' | 'delete' = 'create';
+                
+                if (isEdit) {
+                  changeId = (change as DocumentEdit).document_id;
+                  changeType = 'edit';
+                } else if (isDelete) {
+                  changeId = deleteChangeIds.get(change as DocumentToDelete) || `delete-${index}`;
+                  changeType = 'delete';
+                } else {
+                  changeId = createChangeIds.get(change as GeneratedDocument) || `create-${index}`;
+                  changeType = 'create';
+                }
+                
                 const originalContentDict = isEdit ? documentContents.get((change as DocumentEdit).document_id) || {
                   markdown_content: ''
                 }: {
                   markdown_content: ''
                 };
+                
                 return (
                   <DocumentChangeCard
                     key={changeId}
                     change={change}
-                    type={isEdit ? 'edit' : 'create'}
+                    type={changeType}
                     isSelected={selectedChanges.has(changeId)}
                     onSelectionChange={(selected) => handleSelectionChange(changeId, selected)}
-                    onApply={() => handleApplySingle(change, isEdit ? 'edit' : 'create')}
+                    onApply={() => handleApplySingle(change, changeType)}
                     onIgnore={() => handleIgnoreSingle(changeId)}
                     originalContent={originalContentDict}
                     disabled={applyingChanges}
                   />
                 );
-              })}
+              })
+            }
               
               {filteredChanges.length === 0 && (
                 <div className="text-center py-12 text-gray-500">

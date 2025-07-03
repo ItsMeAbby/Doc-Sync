@@ -57,6 +57,7 @@ export interface DocumentEditWithOriginal {
 export interface ChangeRequest {
   edit?: DocumentEditWithOriginal[];
   create?: GeneratedDocument[];
+  delete?: DocumentToDelete[];
 }
 
 export interface ProcessingError {
