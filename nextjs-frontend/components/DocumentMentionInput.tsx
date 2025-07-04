@@ -141,21 +141,45 @@ export default function DocumentMentionInput({
     }
   };
 
+  // Scroll highlighted item into view
+  const scrollToHighlighted = (index: number) => {
+    if (dropdownRef.current) {
+      const dropdown = dropdownRef.current;
+      const item = dropdown.children[index] as HTMLElement;
+      if (item) {
+        const dropdownRect = dropdown.getBoundingClientRect();
+        const itemRect = item.getBoundingClientRect();
+        
+        if (itemRect.bottom > dropdownRect.bottom) {
+          // Item is below visible area
+          dropdown.scrollTop += itemRect.bottom - dropdownRect.bottom;
+        } else if (itemRect.top < dropdownRect.top) {
+          // Item is above visible area
+          dropdown.scrollTop -= dropdownRect.top - itemRect.top;
+        }
+      }
+    }
+  };
+
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (showDropdown) {
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setHighlightedIndex(prev => 
-            prev < filteredDocuments.length - 1 ? prev + 1 : 0
-          );
+          setHighlightedIndex(prev => {
+            const newIndex = prev < filteredDocuments.length - 1 ? prev + 1 : 0;
+            setTimeout(() => scrollToHighlighted(newIndex), 0);
+            return newIndex;
+          });
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setHighlightedIndex(prev => 
-            prev > 0 ? prev - 1 : filteredDocuments.length - 1
-          );
+          setHighlightedIndex(prev => {
+            const newIndex = prev > 0 ? prev - 1 : filteredDocuments.length - 1;
+            setTimeout(() => scrollToHighlighted(newIndex), 0);
+            return newIndex;
+          });
           break;
         case 'Enter':
           if (filteredDocuments[highlightedIndex]) {
