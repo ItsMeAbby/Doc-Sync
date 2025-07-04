@@ -19,9 +19,10 @@ interface MarkdownRendererProps {
   keywords_array?: string[];
   isLoading?: boolean;
   document?: DocumentNode;
+  onDocumentReverted?: () => void;
 }
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, documentId, keywords_array = [], isLoading = false, document }) => {
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, documentId, keywords_array = [], isLoading = false, document, onDocumentReverted }) => {
   const router = useRouter();
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   if (isLoading) {
@@ -103,6 +104,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, documentId
           document={document}
           isOpen={isVersionModalOpen}
           onClose={() => setIsVersionModalOpen(false)}
+          onRevert={onDocumentReverted}
         />
       )}
     </div>

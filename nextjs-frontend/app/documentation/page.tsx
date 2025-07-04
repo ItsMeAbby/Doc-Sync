@@ -259,6 +259,7 @@ export default function DocumentationPage() {
                   keywords_array={selectedDocument.keywords_array}
                   isLoading={loading}
                   document={selectedDocument}
+                  onDocumentReverted={handleRefresh}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">

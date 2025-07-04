@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AlertCircle, Calendar, Hash, FileText, Clock, Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, Calendar, Hash, FileText, Clock, Eye, RotateCcw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeRaw from 'rehype-raw';
@@ -19,13 +20,15 @@ interface VersionHistoryModalProps {
   document: DocumentNode;
   isOpen: boolean;
   onClose: () => void;
+  onRevert?: () => void; // Callback to refresh parent component
 }
 
-export default function VersionHistoryModal({ document, isOpen, onClose }: VersionHistoryModalProps) {
+export default function VersionHistoryModal({ document, isOpen, onClose, onRevert }: VersionHistoryModalProps) {
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [reverting, setReverting] = useState<boolean>(false);
 
   // Selected version details
   const selectedVersion = versions.find(v => v.version === selectedVersionId);
@@ -63,7 +66,41 @@ export default function VersionHistoryModal({ document, isOpen, onClose }: Versi
     setVersions([]);
     setSelectedVersionId('');
     setError(null);
+    setReverting(false);
     onClose();
+  };
+
+  const handleRevert = async (versionId: string) => {
+    try {
+      setReverting(true);
+      setError(null);
+      
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiBaseUrl}/api/documents/${document.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          current_version_id: versionId
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to revert document: ${response.statusText}`);
+      }
+
+      // Call the onRevert callback to refresh the parent component
+      onRevert?.();
+      
+      // Close the modal
+      handleClose();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to revert document';
+      setError(errorMessage);
+    } finally {
+      setReverting(false);
+    }
   };
 
   return (
@@ -126,9 +163,23 @@ export default function VersionHistoryModal({ document, isOpen, onClose }: Versi
           {!loading && !error && versions.length > 0 && (
             <>
               <div className="space-y-2">
-                <label htmlFor="version-select" className="text-sm font-medium">
-                  Select Version ({versions.length} total)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="version-select" className="text-sm font-medium">
+                    Select Version ({versions.length} total)
+                  </label>
+                  {selectedVersion && selectedVersionId !== versions[0]?.version && (
+                    <Button
+                      onClick={() => handleRevert(selectedVersionId)}
+                      disabled={reverting}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      {reverting ? 'Reverting...' : 'Revert to this version'}
+                    </Button>
+                  )}
+                </div>
                 <Select value={selectedVersionId} onValueChange={setSelectedVersionId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a version" />
