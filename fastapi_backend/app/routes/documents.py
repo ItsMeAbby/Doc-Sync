@@ -35,7 +35,7 @@ async def create_document(
 
 @router.get("/root", response_model=List[DocumentRead])
 async def get_root_documents(
-    is_api_ref: Optional[bool] = True,
+    is_api_ref: Optional[bool] = None,
     service: DocumentService = Depends(get_document_service)
 ):
     """Get all root-level documents (no parent)"""

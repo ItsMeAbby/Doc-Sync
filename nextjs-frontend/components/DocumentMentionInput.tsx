@@ -126,7 +126,7 @@ export default function DocumentMentionInput({
 
   // Handle document selection
   const selectDocument = (doc: DocumentOption) => {
-    const mentionReplacement = `document_id @${doc.id}`;
+    const mentionReplacement = `document_id ${doc.id}`;
     const newValue = value.slice(0, mentionPosition.start) + mentionReplacement + value.slice(mentionPosition.end);
     onChange(newValue);
     setShowDropdown(false);
@@ -255,7 +255,18 @@ export default function DocumentMentionInput({
                 }`}
                 onClick={() => selectDocument(doc)}
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2">
+                  <div className="flex gap-1 flex-shrink-0 pt-0.5">
+                    <span 
+                      className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getTypeBadgeColor(doc.isApiRef)}`}
+                      title={doc.isApiRef ? 'API Reference' : 'Documentation'}
+                    >
+                      {doc.isApiRef ? 'API' : 'DOC'}
+                    </span>
+                    <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getLanguageBadgeColor(doc.language)}`}>
+                      {doc.language.toUpperCase()}
+                    </span>
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
                       {doc.title}
@@ -266,17 +277,6 @@ export default function DocumentMentionInput({
                     <div className="text-xs text-gray-400 dark:text-gray-500 truncate mt-1">
                       Will insert: @{doc.id}
                     </div>
-                  </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getLanguageBadgeColor(doc.language)}`}>
-                      {doc.language.toUpperCase()}
-                    </span>
-                    <span 
-                      className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getTypeBadgeColor(doc.isApiRef)}`}
-                      title={doc.isApiRef ? 'API Reference' : 'Documentation'}
-                    >
-                      {doc.isApiRef ? 'API' : 'DOC'}
-                    </span>
                   </div>
                 </div>
               </div>

@@ -64,6 +64,7 @@ export default function CreateDocumentPage() {
     fetchParentDocuments();
   }, []);
 
+
   const handleCreateParent = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -344,7 +345,17 @@ export default function CreateDocumentPage() {
                             <span className="text-sm text-gray-600 dark:text-gray-400">Loading parent folders...</span>
                           </div>
                         ) : (
-                          <Select value={documentParentId} onValueChange={setDocumentParentId}>
+                          <Select value={documentParentId} onValueChange={(parentId) => {
+                            setDocumentParentId(parentId);
+                            // Auto-uncheck Reference if Doc parent is selected and checkbox is currently checked
+                            if (parentId && documentIsApiRef) {
+                              const selectedParent = parentDocuments.find(p => p.id === parentId);
+                              if (selectedParent && !selectedParent.is_api_ref) {
+                                // Parent is Doc type, so uncheck API Reference for child
+                                setDocumentIsApiRef(false);
+                              }
+                            }
+                          }}>
                             <SelectTrigger className="h-12 text-base">
                               <SelectValue placeholder="Select parent folder (optional)" />
                             </SelectTrigger>
@@ -352,7 +363,21 @@ export default function CreateDocumentPage() {
                               <SelectItem value="">No Parent (Root Document)</SelectItem>
                               {parentDocuments.map((parent) => (
                                 <SelectItem key={parent.id} value={parent.id}>
-                                  {parent.name}{parent.title ? ` - ${parent.title}` : ''}
+                                  <div className="flex items-center gap-2 w-full">
+                                    <span 
+                                      className={`px-1.5 py-0.5 text-xs font-medium rounded border flex-shrink-0 ${
+                                        parent.is_api_ref 
+                                          ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                                          : 'bg-gray-50 text-gray-700 border-gray-200'
+                                      }`}
+                                      title={parent.is_api_ref ? 'API Reference' : 'Documentation'}
+                                    >
+                                      {parent.is_api_ref ? 'API' : 'Doc'}
+                                    </span>
+                                    <span className="flex-1 truncate">
+                                      {parent.name}{parent.title ? ` - ${parent.title}` : ''}
+                                    </span>
+                                  </div>
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -379,7 +404,7 @@ export default function CreateDocumentPage() {
                         <Checkbox 
                           id="documentIsApiRef" 
                           checked={documentIsApiRef} 
-                          onCheckedChange={() => setDocumentIsApiRef(!documentIsApiRef)}
+                          onCheckedChange={(checked) => setDocumentIsApiRef(checked === true)}
                         />
                         <Label htmlFor="documentIsApiRef" className="text-sm font-medium text-gray-900 dark:text-white">
                           Mark as API Reference
