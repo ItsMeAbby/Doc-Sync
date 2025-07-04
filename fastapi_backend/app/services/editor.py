@@ -16,26 +16,47 @@ class MainEditor:
         self.create_documents: list[GeneratedDocument] = []
         self.delete_documents : list[DocumentToDelete] = []
 
-    async def run(self) -> EditDocumentationResponse:
+    async def run(self) -> "EditDocumentationResponse":
         """
-        Run the agent to get the response based on the query.
+        Detect user intents and dispatch the appropriate action handlers **concurrently**.
+        All detected intents are scheduled as asyncio tasks so that edit, create, and delete
+        operations run in parallel whenever possible.
+
+        Returns
+        -------
+        EditDocumentationResponse
+            Aggregated results from all handler tasks.
         """
         detected_intents = await self._detect_intent()
-        
+
+        # Map intent names to their corresponding handler coroutine factories.
+        intent_handlers = {
+            "edit": self._handle_edit_intent,
+            "create": self._handle_create_intent,
+            "delete": self._handle_delete_intent,
+        }
+
+        # Collect tasks for every detected intent.
+        tasks: list[asyncio.Task] = []
         for intent in detected_intents.intents:
             print(f"Detected intent: {intent.intent} with reason: {intent.reason}")
-            
-            if intent.intent == "edit":
-                await self._handle_edit_intent(intent)
-            elif intent.intent == "create":
-                await self._handle_create_intent(intent)
-            elif intent.intent == "delete":
-                await self._handle_delete_intent(intent)
-        
+            handler = intent_handlers.get(intent.intent)
+            if handler is not None:
+                # Schedule the handler concurrently.
+                tasks.append(asyncio.create_task(handler(intent)))
+            else:
+                # Log or handle unexpected intents here if desired.
+                print(f"⚠️  No handler found for intent '{intent.intent}'. Skipping.")
+
+        # Await all handler tasks concurrently.
+        if tasks:
+            await asyncio.gather(*tasks)
+
+        # Assemble and return the aggregated response object.
         return EditDocumentationResponse(
             edit=self.edit_changes,
             create=self.create_documents,
-            delete=self.delete_documents
+            delete=self.delete_documents,
         )
 
     async def _handle_edit_intent(self, intent) -> None:
