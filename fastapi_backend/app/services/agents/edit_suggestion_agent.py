@@ -3,12 +3,14 @@ from typing_extensions import Literal
 from pydantic import BaseModel
 import sys
 import os
+
+from app.services.shared.models import ApiRef
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
 from agents import Agent, Runner, trace
 from app.config import settings
 from app.services.prompts import EDIT_SUGGESTION_PROMPT
 from app.services.tools.edit_suggesstion_tools import get_all_document_summaries, get_document_by_version
-
+from dataclasses import dataclass
 class EditSuggestion(BaseModel):
     """
     Represents a suggested edit to a document.
@@ -36,7 +38,9 @@ class EditAgentResponse(BaseModel):
     """
     suggestions: list[EditSuggestion]
     """List of suggested edits to be made to the document."""
-edit_suggestion_agent=Agent(
+
+
+edit_suggestion_agent=Agent[ApiRef](
     name="EditSuggestionAgent",
     instructions=EDIT_SUGGESTION_PROMPT,
     model=settings.OPENAI_MODEL,

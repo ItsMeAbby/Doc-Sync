@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import List, Optional
 import sys
 import os
@@ -5,9 +6,10 @@ import os
 from pydantic import BaseModel, Field
 from typing_extensions import Literal
 from app.services.openai_service import create_embedding
+from app.services.shared.models import ApiRef
 from app.supabase import supabase
 import asyncio
-from agents import function_tool, Agent
+from agents import RunContextWrapper, function_tool, Agent
 
 from app.config import settings
 class Document(BaseModel):
@@ -34,7 +36,6 @@ class EmbeddingsConfiguration(BaseModel):
     top_k: int = 5
 
 class AllDocumentsConfiguration(BaseModel):
-    language: Literal["en", "ja"] = "en"
     is_api_ref: bool = False
 
 class FetchDocumentConfiguration(BaseModel):
@@ -86,18 +87,14 @@ async def get_similar_documents_based_on_embeddings(
     return SimilarDocumentsResponse(
         documents=documents
     )
-
-
 @function_tool
 async def get_all_document_summaries(
-    config: AllDocumentsConfiguration
+    wrapper: RunContextWrapper[ApiRef]
 )-> SimilarDocumentsResponse:
     """
-    This tool retrieves all documents summaries based on the provided query using embeddings.
+    This tool retrieves all documents summaries and metadata.
     Args:
-        config (AllDocumentsConfiguration): Configuration for the similarity search.
-            language (Literal["en", "ja"]): The language of the documents to search in. Defaults to "en".
-            is_api_ref (bool): If True, only API reference documents are considered. Defaults to False.
+        None
     Returns:
         SimilarDocumentsResponse: A response containing a list of similar documents.
         SimilarDocumentsResponse will be empty if no documents are found.
@@ -116,6 +113,7 @@ async def get_all_document_summaries(
         Exception: If there is an error executing the getting all document summaries.
     """
     # get all documents
+    print("Fetching all documents summaries for is_api_ref:", wrapper.context.is_api_ref)
     query = (
             supabase.table("documents")
             .select("""
@@ -129,9 +127,8 @@ async def get_all_document_summaries(
                 )
             """)
             .eq("is_deleted", False)
-            .eq("is_api_ref", config.is_api_ref)
+            .eq("is_api_ref", wrapper.context.is_api_ref)  # Filter by API reference if specified
             .order("created_at", desc=True)
-            .filter("document_contents.language", "eq", config.language)
             .not_.is_("current_version_id", None)
         )
     response= query.execute()
@@ -150,10 +147,10 @@ async def get_all_document_summaries(
                     summary=content.get("summary", ""),
                     similarity=None,  # No similarity score for all documents
                     path=doc.get("path", ""),
-                    language=config.language,
+                    language= content.get("language", "en"),
                     keywords_array=content.get("keywords_array", []),
                     urls_array=content.get("urls_array", []),
-                    is_api_ref=config.is_api_ref
+                    is_api_ref=doc.get("is_api_ref", False)
                 )
             )
     if not documents:

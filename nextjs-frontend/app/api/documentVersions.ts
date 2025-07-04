@@ -18,7 +18,10 @@ export const documentVersionsApi = {
     const response = await fetch(`${apiBaseUrl}/api/documents/${documentId}/versions/${versionId}`);
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch document version: ${response.statusText}`);
+      const response = await fetch(`${apiBaseUrl}/api/documents/${documentId}/versions/latest`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch document version: ${response.statusText}`);
+      }
     }
 
     return response.json();

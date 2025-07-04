@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -81,3 +82,7 @@ class DetectedIntents(BaseModel):
     """
     intents: List[Intent]
     primary_intent: str
+
+@dataclass
+class ApiRef:
+    is_api_ref: bool

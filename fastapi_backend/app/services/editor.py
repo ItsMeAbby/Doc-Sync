@@ -3,6 +3,7 @@ from app.services.agents.editor_agent import DocumentEdit, edit_content_agent, E
 from app.services.agents.intent_detection_agent import Detected_Intent, intent_agent
 from app.services.agents.delete_content_agent import delete_content_agent, DocumentToDelete,DeleteContentResponse
 from app.services.agents.create_content_agent import CreateContentResponse, GeneratedDocument, create_content_agent
+from app.services.shared.models import ApiRef
 from agents import Runner,set_default_openai_key,set_tracing_disabled
 from app.config import settings
 import json
@@ -103,12 +104,31 @@ class MainEditor:
     async def _get_edit_suggestions(self, intent) -> EditAgentResponse:
         """
         Get edit suggestions from the edit suggestion agent.
+        Runs two agents concurrently - one with API reference context and one without.
         """
-        edit_suggestion_agent_response = await Runner.run(edit_suggestion_agent,
-            f"User query: {self.query} Task: {intent.task} Reason: {intent.reason}. Provide edit suggestions for the documentation based on the task"
+        query_text = f"User query: {self.query} Task: {intent.task} Reason: {intent.reason}. Provide edit suggestions for the documentation based on the task"
+        
+        # Run two agents concurrently
+        api_ref_task = Runner.run(edit_suggestion_agent, query_text, context=ApiRef(is_api_ref=True))
+        non_api_ref_task = Runner.run(edit_suggestion_agent, query_text, context=ApiRef(is_api_ref=False))
+        
+        # Await both tasks concurrently
+        api_ref_response, non_api_ref_response = await asyncio.gather(api_ref_task, non_api_ref_task)
+        
+        # Parse both responses
+        api_ref_suggestions = api_ref_response.final_output_as(EditAgentResponse)
+        print("API Reference Suggestions:")
+        print(api_ref_suggestions.model_dump_json(indent=2))
+        non_api_ref_suggestions = non_api_ref_response.final_output_as(EditAgentResponse)
+        print("Non-API Reference Suggestions:")
+        print(non_api_ref_suggestions.model_dump_json(indent=2))
+        
+        # Combine suggestions from both agents
+        combined_suggestions = EditAgentResponse(
+            suggestions=api_ref_suggestions.suggestions + non_api_ref_suggestions.suggestions
         )
-        edit_agent_suggestions = edit_suggestion_agent_response.final_output_as(EditAgentResponse)
-        return edit_agent_suggestions
+        
+        return combined_suggestions
     
     async def _process_edit_suggestions(self, suggestions) -> list[DocumentEdit]:
         """
