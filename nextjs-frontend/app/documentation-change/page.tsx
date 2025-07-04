@@ -952,6 +952,7 @@ export default function DocumentationChangePage() {
           placeholder="Describe what changed or what needs to be updated... (Type @ to mention documents)"
           rows={4}
           className="mb-4"
+          onSubmit={handleSubmit}
         />
         
         <Button 

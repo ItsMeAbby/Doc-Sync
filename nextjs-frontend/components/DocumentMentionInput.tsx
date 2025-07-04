@@ -18,6 +18,7 @@ interface DocumentMentionInputProps {
   placeholder?: string;
   rows?: number;
   className?: string;
+  onSubmit?: () => void;
 }
 
 export default function DocumentMentionInput({
@@ -26,7 +27,8 @@ export default function DocumentMentionInput({
   disabled = false,
   placeholder = "Describe what changed or what needs to be updated...",
   rows = 4,
-  className = ""
+  className = "",
+  onSubmit
 }: DocumentMentionInputProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [mentionText, setMentionText] = useState('');
@@ -141,30 +143,36 @@ export default function DocumentMentionInput({
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (!showDropdown) return;
-    
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setHighlightedIndex(prev => 
-          prev < filteredDocuments.length - 1 ? prev + 1 : 0
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setHighlightedIndex(prev => 
-          prev > 0 ? prev - 1 : filteredDocuments.length - 1
-        );
-        break;
-      case 'Enter':
-        if (filteredDocuments[highlightedIndex]) {
+    if (showDropdown) {
+      switch (e.key) {
+        case 'ArrowDown':
           e.preventDefault();
-          selectDocument(filteredDocuments[highlightedIndex]);
-        }
-        break;
-      case 'Escape':
-        setShowDropdown(false);
-        break;
+          setHighlightedIndex(prev => 
+            prev < filteredDocuments.length - 1 ? prev + 1 : 0
+          );
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setHighlightedIndex(prev => 
+            prev > 0 ? prev - 1 : filteredDocuments.length - 1
+          );
+          break;
+        case 'Enter':
+          if (filteredDocuments[highlightedIndex]) {
+            e.preventDefault();
+            selectDocument(filteredDocuments[highlightedIndex]);
+          }
+          break;
+        case 'Escape':
+          setShowDropdown(false);
+          break;
+      }
+    } else {
+      // Handle form submission when dropdown is not open
+      if (e.key === 'Enter' && !e.shiftKey && onSubmit) {
+        e.preventDefault();
+        onSubmit();
+      }
     }
   };
 
