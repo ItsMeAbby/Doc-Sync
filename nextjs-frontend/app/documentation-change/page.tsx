@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
+import DocumentMentionInput from '@/components/DocumentMentionInput';
 
 export default function DocumentationChangePage() {
   const searchParams = useSearchParams();
@@ -944,13 +945,13 @@ export default function DocumentationChangePage() {
           </div>
         )}
         
-        <textarea
-          className="w-full p-3 sm:p-4 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 mb-4 text-sm sm:text-base"
-          rows={4}
-          placeholder="Describe what changed or what needs to be updated..."
+        <DocumentMentionInput
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={setQuery}
           disabled={loading}
+          placeholder="Describe what changed or what needs to be updated... (Type @ to mention documents)"
+          rows={4}
+          className="mb-4"
         />
         
         <Button 
