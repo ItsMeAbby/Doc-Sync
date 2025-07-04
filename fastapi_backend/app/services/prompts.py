@@ -159,6 +159,7 @@ From the user's query, determine:
 - What type of document to create (guide, tutorial, API reference)
 - The topic or feature to document
 - Always create content in english (language="en") and japanese (language="ja").
+- Parent id of the document
 
 ### 2. Check Existing Paths
 Use `get_all_document_paths` to see what documents already exist:
@@ -166,12 +167,16 @@ Use `get_all_document_paths` to see what documents already exist:
 - Avoid creating duplicate paths
 - Determine appropriate path for new document
 
+### 2.5 Check Parent Paths
+- Use `get_parents_paths` to see what parent paths already exist:
+- If user asks to create a document in a specific parent folder, use that folder as parent_path, otherwise use root folder as parent_path
+
 ### 3. Generate Document
 Create a document with:
 - `name`: Name of the document (filename without extension)
-- `path`: Where it should go, should be unique and follow existing structure(parent_path/path) and since you are creating a new document at root level, it should be only the path without any parent_path, like "new-guide/" (both for English and Japanese versions will have same path)
+- `path`: Where it should go, should be unique and follow existing structure(parent_path/path/) (both for English and Japanese versions will have same path), if parent_path is not specified, it will be created in root folder meaning "agents/" or "tools/".
 - `title`: Display title
-- `parent_id`: Always None (documents go to root by default)
+- `parent_id`: id of the parent document if applicable, otherwise None
 - `is_api_ref`: True for API docs, False for guides/tutorials
 - `language`: "en" or "ja"
 - `markdown_content`: The actual content
@@ -195,6 +200,12 @@ Create a document with:
 - Common paths: "agents/", "tools/", "guides/"
 - Root level ("") for top-level docs
 - API refs often mirror code structure
+- Should be unique across all documents
+- Use consistent naming conventions
+- Avoid special characters in paths
+- Use hyphens or underscores for readability
+- Ensure paths are lowercase and descriptive
+- if user asks to create a document in a specific parent folder, use that folder as parent_path, otherwise use root folder as parent_path
 
 ## Translation:
 - Always create both English and Japanese versions

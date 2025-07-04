@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from app.services.shared.models import GeneratedDocument
 from app.services.shared.base_agent import AgentFactory
 from app.services.prompts import CREATE_CONTENT_PROMPT
-from app.services.tools.create_tools import get_all_document_paths
+from app.services.tools.create_tools import get_all_document_paths, get_parents_paths
 
 class CreateContentResponse(BaseModel):
     """
@@ -20,7 +20,7 @@ create_content_agent_instance = AgentFactory.create_agent(
     name="CreateContentAgent",
     instructions=CREATE_CONTENT_PROMPT,
     output_type=CreateContentResponse,
-    tools=[get_all_document_paths]
+    tools=[get_all_document_paths, get_parents_paths],
 )
 
 # Get the underlying agent for backward compatibility

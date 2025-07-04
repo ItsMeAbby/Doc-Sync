@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 import sys
 import os
 from pydantic import BaseModel, Field
@@ -19,6 +19,24 @@ class DocumentPath(BaseModel):
 
 class AllPathsResponse(BaseModel):
     paths: List[DocumentPath]
+
+@function_tool
+async def get_parents_paths() -> List[Dict[str, Any]]:
+        """Get all root-level documents (no parent)
+        Returns:
+        """
+        
+        try:
+            query = (supabase.table("documents")
+                    .select("*")
+                    .is_("parent_id", None)
+                    .eq("is_deleted", False)
+                    .is_("current_version_id", None))
+            
+            result = query.execute()
+            return result.data
+        except Exception as e:
+            raise Exception(f"Error fetching root documents: {str(e)}")
 
 @function_tool
 async def get_all_document_paths(
