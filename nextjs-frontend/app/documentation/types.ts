@@ -27,6 +27,7 @@ export interface DocumentVersion {
   name?: string;                    // From document metadata
   path?: string;                    // From document metadata
   title?: string;                   // From document metadata
+  latest?: boolean;                 // Flag to indicate if this is the current/latest version
 }
 
 export interface GetAllDocumentsResponse {

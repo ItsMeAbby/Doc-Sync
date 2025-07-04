@@ -147,21 +147,28 @@ class TestMainEditor:
     @patch('app.services.editor.Runner.run')
     async def test_get_edit_suggestions_success(self, mock_runner):
         """Test _get_edit_suggestions method success"""
+        from app.services.agents.edit_suggestion_agent import EditAgentResponse
+        
         mock_intent = MagicMock()
         mock_intent.task = "edit task"
         mock_intent.reason = "edit reason"
         
+        # Mock response objects for both API ref and non-API ref calls
         mock_response = MagicMock()
-        mock_final_output = MagicMock()
-        mock_response.final_output_as.return_value = mock_final_output
+        mock_edit_response = EditAgentResponse(suggestions=[])
+        mock_response.final_output_as.return_value = mock_edit_response
         mock_runner.return_value = mock_response
         
         editor = MainEditor("test query")
         result = await editor._get_edit_suggestions(mock_intent)
         
-        assert result == mock_final_output
-        mock_runner.assert_called_once()
-        mock_response.final_output_as.assert_called_once()
+        # Should return a combined EditAgentResponse with empty suggestions
+        assert isinstance(result, EditAgentResponse)
+        assert result.suggestions == []
+        
+        # Runner should be called twice (API ref and non-API ref)
+        assert mock_runner.call_count == 2
+        assert mock_response.final_output_as.call_count == 2
     
     @pytest.mark.asyncio
     @patch('app.services.editor.Runner.run')

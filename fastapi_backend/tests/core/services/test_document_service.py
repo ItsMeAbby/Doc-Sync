@@ -122,11 +122,19 @@ class TestDocumentService:
         mock_doc_repo.get_document_by_id.assert_called_once_with("doc-123")
     
     @pytest.mark.asyncio
+    @patch('app.core.services.document_service.DocumentRepository')
     @patch('app.core.services.document_service.ContentRepository')
-    async def test_list_document_versions_success(self, mock_content_repo_class):
+    async def test_list_document_versions_success(self, mock_content_repo_class, mock_doc_repo_class):
         """Test successful document versions listing"""
         mock_content_repo = AsyncMock()
         mock_content_repo_class.return_value = mock_content_repo
+        
+        mock_doc_repo = AsyncMock()
+        mock_doc_repo_class.return_value = mock_doc_repo
+        
+        # Mock document with current version ID
+        mock_document = {"id": "doc-123", "current_version_id": "2.0"}
+        mock_doc_repo.get_document_by_id = AsyncMock(return_value=mock_document)
         
         mock_versions = [
             {"version": "2.0", "created_at": "2023-01-02T00:00:00Z"},
@@ -139,6 +147,11 @@ class TestDocumentService:
         
         assert len(result) == 2
         assert result[0]["version"] == "2.0"
+        assert result[0]["latest"] == True  # Version 2.0 should be marked as latest
+        assert result[1]["version"] == "1.0"
+        assert result[1]["latest"] == False  # Version 1.0 should not be latest
+        
+        mock_doc_repo.get_document_by_id.assert_called_once_with("doc-123")
         mock_content_repo.get_document_versions.assert_called_once_with("doc-123")
     
     @pytest.mark.asyncio

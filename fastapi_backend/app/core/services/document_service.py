@@ -63,7 +63,18 @@ class DocumentService:
 
     async def list_document_versions(self, doc_id: str) -> List[DocumentContentRead]:
         """List all versions of a document"""
-        return await self.content_repo.get_document_versions(doc_id)
+        # Get the document to find the current version ID
+        doc_result = await self.doc_repo.get_document_by_id(doc_id)
+        current_version_id = doc_result.get("current_version_id")
+        
+        # Get all versions
+        versions = await self.content_repo.get_document_versions(doc_id)
+        
+        # Add the 'latest' flag to each version
+        for version in versions:
+            version["latest"] = version["version"] == current_version_id
+            
+        return versions
 
     async def get_document_version(self, doc_id: str, version_id: str) -> DocumentContentRead:
         """Get a specific version (optional: `latest` as alias)"""

@@ -8,7 +8,8 @@ import remarkGfm from 'remark-gfm';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
-import { Clock } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Clock, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { DocumentNode } from '@/app/documentation/types';
 import VersionHistoryModal from './VersionHistoryModal';
@@ -20,11 +21,44 @@ interface MarkdownRendererProps {
   isLoading?: boolean;
   document?: DocumentNode;
   onDocumentReverted?: () => void;
+  onDocumentDeleted?: () => void;
 }
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, documentId, keywords_array = [], isLoading = false, document, onDocumentReverted }) => {
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, documentId, keywords_array = [], isLoading = false, document, onDocumentReverted, onDocumentDeleted }) => {
   const router = useRouter();
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!document?.id) return;
+    
+    try {
+      setIsDeleting(true);
+      
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiBaseUrl}/api/documents/${document.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          is_deleted: true
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete document: ${response.statusText}`);
+      }
+
+      // Call the onDocumentDeleted callback to refresh the parent component
+      onDocumentDeleted?.();
+    } catch (err) {
+      console.error('Failed to delete document:', err);
+      // You might want to show a toast or error message here
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   if (isLoading) {
     return (
       <div className="space-y-4 p-4">
@@ -69,15 +103,50 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, documentId
         </div>
         <div className="flex justify-end gap-2">
           {document && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsVersionModalOpen(true)}
-              className="inline-flex items-center gap-2"
-            >
-              <Clock className="h-4 w-4" />
-              Version History
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsVersionModalOpen(true)}
+                className="inline-flex items-center gap-2"
+              >
+                <Clock className="h-4 w-4" />
+                Version History
+              </Button>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {isDeleting ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{document.title || document.name}"? 
+                      This action cannot be undone and will permanently remove the document and all its versions.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-red-600 hover:bg-red-700"
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? 'Deleting...' : 'Delete'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           )}
           <button 
             className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"

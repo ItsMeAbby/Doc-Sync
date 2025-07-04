@@ -46,9 +46,10 @@ export default function VersionHistoryModal({ document, isOpen, onClose, onRever
       const fetchedVersions = await documentVersionsApi.getDocumentVersions(document.id);
       setVersions(fetchedVersions);
       
-      // Select the first (latest) version by default
+      // Select the latest version by default
       if (fetchedVersions.length > 0) {
-        setSelectedVersionId(fetchedVersions[0].version);
+        const latestVersion = fetchedVersions.find(v => v.latest) || fetchedVersions[0];
+        setSelectedVersionId(latestVersion.version);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch versions';
@@ -167,7 +168,7 @@ export default function VersionHistoryModal({ document, isOpen, onClose, onRever
                   <label htmlFor="version-select" className="text-sm font-medium">
                     Select Version ({versions.length} total)
                   </label>
-                  {selectedVersion && selectedVersionId !== versions[0]?.version && (
+                  {selectedVersion && !selectedVersion.latest && (
                     <Button
                       onClick={() => handleRevert(selectedVersionId)}
                       disabled={reverting}
@@ -189,7 +190,7 @@ export default function VersionHistoryModal({ document, isOpen, onClose, onRever
                       <SelectItem key={version.version} value={version.version}>
                         <div className="flex items-center gap-2">
                           <span>
-                            {index === 0 ? 'Latest' : `Version ${versions.length - index}`}
+                            {version.latest ? 'Latest (Current)' : `Version ${index + 1}`}
                           </span>
                           <span className="text-xs text-gray-500">
                             {formatDate(version.created_at)}

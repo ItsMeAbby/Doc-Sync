@@ -260,6 +260,11 @@ export default function DocumentationPage() {
                   isLoading={loading}
                   document={selectedDocument}
                   onDocumentReverted={handleRefresh}
+                  onDocumentDeleted={() => {
+                    // Clear the selected document and refresh
+                    setSelectedDocument(null);
+                    handleRefresh();
+                  }}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">

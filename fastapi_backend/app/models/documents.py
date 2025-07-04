@@ -56,6 +56,7 @@ class DocumentContentRead(DocumentContentBase):
     name: Optional[str] = None  
     path: Optional[str] = None  
     title: Optional[str] = None
+    latest: Optional[bool] = None  # Flag to indicate if this is the current/latest version
 
 
 

@@ -1,13 +1,18 @@
 import { DocumentVersion } from '@/app/documentation/types';
-import { fetchDocumentVersionsWithCache } from '@/app/utils/versionsCache';
 
 export const documentVersionsApi = {
   /**
-   * Fetch all versions of a document with caching
+   * Fetch all versions of a document without caching
    */
   async getDocumentVersions(documentId: string): Promise<DocumentVersion[]> {
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
-    return fetchDocumentVersionsWithCache(documentId, apiBaseUrl);
+    const response = await fetch(`${apiBaseUrl}/api/documents/${documentId}/versions`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch document versions: ${response.statusText}`);
+    }
+
+    return response.json();
   },
 
   /**
