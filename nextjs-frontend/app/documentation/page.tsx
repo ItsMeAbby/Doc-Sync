@@ -228,7 +228,7 @@ export default function DocumentationPage() {
           </div>
         </Card>
       ) : (
-        <div className="relative flex flex-col lg:flex-row gap-4">
+        <div className="relative flex flex-col lg:flex-row gap-4 h-[calc(100vh-180px)]">
           {/* Mobile backdrop */}
           {sidebarOpen && (
             <div 
@@ -240,16 +240,16 @@ export default function DocumentationPage() {
           {/* Left sidebar - Document tree */}
           <div className={`
             ${sidebarOpen ? 'block' : 'hidden'} lg:block
-            w-full lg:w-80 xl:w-96 mb-4 lg:mb-0 lg:flex-shrink-0
+            w-full lg:w-80 xl:w-96 mb-4 lg:mb-0 lg:flex-shrink-0 lg:h-full
             lg:relative absolute top-0 left-0 right-0 z-20 lg:z-auto
           `}>
-            <Card className="p-3 lg:p-4 h-full overflow-auto max-h-[calc(100vh-200px)] lg:max-h-[calc(100vh-180px)] shadow-lg lg:shadow">
-              <Tabs defaultValue="documentation" value={activeTab} onValueChange={(value) => setActiveTab(value as 'documentation' | 'api_references')}>
+            <Card className="p-3 lg:p-4 h-full overflow-hidden shadow-lg lg:shadow flex flex-col">
+              <Tabs defaultValue="documentation" value={activeTab} onValueChange={(value) => setActiveTab(value as 'documentation' | 'api_references')} className="flex flex-col h-full">
                 <TabsList className="w-full">
                   <TabsTrigger value="documentation" className="flex-1 text-xs lg:text-sm">Documentation</TabsTrigger>
                   <TabsTrigger value="api_references" className="flex-1 text-xs lg:text-sm">API References</TabsTrigger>
                 </TabsList>
-                <TabsContent value="documentation" className="mt-4">
+                <TabsContent value="documentation" className="mt-4 flex-1 overflow-auto">
                   {loading ? (
                     <div className="flex flex-col items-center justify-center p-8 text-center min-h-[700px]">
                       <Spinner size="sm" />
@@ -267,7 +267,7 @@ export default function DocumentationPage() {
                     </div>
                   )}
                 </TabsContent>
-                <TabsContent value="api_references" className="mt-4">
+                <TabsContent value="api_references" className="mt-4 flex-1 overflow-auto">
                   {loading ? (
                     <div className="flex flex-col items-center justify-center p-8 text-center min-h-[700px]">
                       <Spinner size="sm" />
@@ -290,8 +290,8 @@ export default function DocumentationPage() {
           </div>
 
           {/* Main content area - Markdown renderer */}
-          <div className="w-full lg:flex-1 lg:min-w-0">
-            <Card className="p-2 sm:p-4 h-full">
+          <div className="w-full lg:flex-1 lg:min-w-0 lg:h-full lg:overflow-hidden">
+            <Card className="p-2 sm:p-4 h-full overflow-auto">
               {selectedDocument ? (
                 <MarkdownRenderer 
                   content={selectedDocument.markdown_content || ''} 
