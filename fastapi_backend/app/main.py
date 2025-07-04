@@ -5,26 +5,34 @@ from app.utils import simple_generate_unique_route_id
 from app.routes.documents import router as documents_router
 from app.routes.edit_documentation import router as edit_documentation_router
 from app.config import settings
-import os
-import openai
-# Initialize OpenAI client with the API key from settings
-openai.api_key = settings.OPENAI_API_KEY
-os.environ["OPENAI_API_KEY"] = settings.OPENAI_API_KEY
+from app.api.middleware import setup_openai_config
 
-app = FastAPI(
-    generate_unique_id_function=simple_generate_unique_route_id,
-    openapi_url=settings.OPENAPI_URL,
-)
 
-# Middleware for CORS configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def create_app() -> FastAPI:
+    """Create and configure the FastAPI application"""
+    app = FastAPI(
+        generate_unique_id_function=simple_generate_unique_route_id,
+        openapi_url=settings.OPENAPI_URL,
+    )
 
-# Include routes
-app.include_router(documents_router, prefix="/api/documents")
-app.include_router(edit_documentation_router, prefix="/api/edit")
+    # Setup OpenAI configuration
+    setup_openai_config()
+
+    # Middleware for CORS configuration
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Include routes
+    app.include_router(documents_router, prefix="/api/documents")
+    app.include_router(edit_documentation_router, prefix="/api/edit")
+    
+    return app
+
+
+# Create the app instance
+app = create_app()

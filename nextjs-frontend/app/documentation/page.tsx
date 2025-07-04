@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { useRouter } from 'next/navigation';
 import { FaLightbulb } from 'react-icons/fa';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Menu, X } from 'lucide-react';
 import { fetchDocumentsWithCache, documentCache } from '@/app/utils/documentCache';
 
 export default function DocumentationPage() {
@@ -23,6 +23,7 @@ export default function DocumentationPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'documentation' | 'api_references'>('documentation');
   const [error, setError] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchDocuments = async () => {
@@ -90,6 +91,8 @@ export default function DocumentationPage() {
 
   const handleDocumentSelect = (document: DocumentNode) => {
     setSelectedDocument(document);
+    // Close sidebar on mobile after selecting a document
+    setSidebarOpen(false);
   };
 
   const handleLanguageChange = (language: string) => {
@@ -158,13 +161,25 @@ export default function DocumentationPage() {
   return (
     <div className="container mx-auto px-2 sm:px-4 py-4">
       <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <LanguageSelector
-          languages={Object.keys(documents)}
-          selectedLanguage={selectedLanguage}
-          onLanguageChange={handleLanguageChange}
-        />
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="lg:hidden"
+            title="Toggle sidebar"
+          >
+            {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </Button>
+          
+          <LanguageSelector
+            languages={Object.keys(documents)}
+            selectedLanguage={selectedLanguage}
+            onLanguageChange={handleLanguageChange}
+          />
+        </div>
         
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Button
             variant="outline"
             size="icon"
@@ -175,11 +190,12 @@ export default function DocumentationPage() {
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
           <Button
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500"
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500 flex-1 sm:flex-none"
             onClick={() => router.push('/documentation-change')}
           >
             <FaLightbulb className="h-4 w-4" />
-            Suggest Documentation Update
+            <span className="hidden sm:inline">Suggest Documentation Update</span>
+            <span className="sm:hidden">Suggest Update</span>
           </Button>
         </div>
       </div>
@@ -212,17 +228,33 @@ export default function DocumentationPage() {
           </div>
         </Card>
       ) : (
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* Left sidebar - Document tree (20% width) */}
-          <div className="w-full lg:w-1/5 mb-4 lg:mb-0">
-            <Card className="p-4 h-full overflow-auto">
-              <Tabs defaultValue="documentation" value={activeTab} onValueChange={(value) => setActiveTab(value as 'documentation' | 'api_references')}>
+        <div className="relative flex flex-col lg:flex-row gap-4 h-[calc(100vh-180px)]">
+          {/* Mobile backdrop */}
+          {sidebarOpen && (
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 z-10 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+          
+          {/* Left sidebar - Document tree */}
+          <div className={`
+            ${sidebarOpen ? 'block' : 'hidden'} lg:block
+            w-full lg:w-80 xl:w-96 mb-4 lg:mb-0 lg:flex-shrink-0 lg:h-full
+            lg:relative absolute top-0 left-0 right-0 z-20 lg:z-auto
+          `}>
+            <Card className="p-3 lg:p-4 h-full overflow-hidden shadow-lg lg:shadow flex flex-col">
+              <Tabs defaultValue="documentation" value={activeTab} onValueChange={(value) => setActiveTab(value as 'documentation' | 'api_references')} className="flex flex-col h-full">
                 <TabsList className="w-full">
-                  <TabsTrigger value="documentation" className="flex-1">Documentation</TabsTrigger>
-                  <TabsTrigger value="api_references" className="flex-1">API References</TabsTrigger>
+                  <TabsTrigger value="documentation" className="flex-1 text-xs lg:text-sm">Documentation</TabsTrigger>
+                  <TabsTrigger value="api_references" className="flex-1 text-xs lg:text-sm">API References</TabsTrigger>
                 </TabsList>
-                <TabsContent value="documentation" className="mt-4">
-                  {documents[selectedLanguage]?.documentation ? (
+                <TabsContent value="documentation" className="mt-4 flex-1 overflow-auto">
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[700px]">
+                      <Spinner size="sm" />
+                    </div>
+                  ) : documents[selectedLanguage]?.documentation ? (
                     <DocumentTree
                       documents={documents[selectedLanguage].documentation}
                       onSelectDocument={handleDocumentSelect}
@@ -230,11 +262,17 @@ export default function DocumentationPage() {
                       isLoading={loading}
                     />
                   ) : (
-                    <div>No documentation available</div>
+                    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[700px]">
+                      <p className="text-gray-600 dark:text-gray-400">No documentation available</p>
+                    </div>
                   )}
                 </TabsContent>
-                <TabsContent value="api_references" className="mt-4">
-                  {documents[selectedLanguage]?.api_references ? (
+                <TabsContent value="api_references" className="mt-4 flex-1 overflow-auto">
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[700px]">
+                      <Spinner size="sm" />
+                    </div>
+                  ) : documents[selectedLanguage]?.api_references ? (
                     <DocumentTree
                       documents={documents[selectedLanguage].api_references}
                       onSelectDocument={handleDocumentSelect}
@@ -242,7 +280,9 @@ export default function DocumentationPage() {
                       isLoading={loading}
                     />
                   ) : (
-                    <div>No API references available</div>
+                    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[700px]">
+                      <p className="text-gray-600 dark:text-gray-400">No API references available</p>
+                    </div>
                   )}
                 </TabsContent>
               </Tabs>
@@ -250,8 +290,8 @@ export default function DocumentationPage() {
           </div>
 
           {/* Main content area - Markdown renderer */}
-          <div className="w-full lg:w-4/5">
-            <Card className="p-2 sm:p-4 h-full">
+          <div className="w-full lg:flex-1 lg:min-w-0 lg:h-full lg:overflow-hidden">
+            <Card className="p-2 sm:p-4 h-full overflow-auto">
               {selectedDocument ? (
                 <MarkdownRenderer 
                   content={selectedDocument.markdown_content || ''} 
@@ -259,6 +299,12 @@ export default function DocumentationPage() {
                   keywords_array={selectedDocument.keywords_array}
                   isLoading={loading}
                   document={selectedDocument}
+                  onDocumentReverted={handleRefresh}
+                  onDocumentDeleted={() => {
+                    // Clear the selected document and refresh
+                    setSelectedDocument(null);
+                    handleRefresh();
+                  }}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">

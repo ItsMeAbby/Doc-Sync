@@ -1,32 +1,10 @@
 from typing import List, Optional
-from typing_extensions import Literal
+from agents import Runner, trace
 from pydantic import BaseModel
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
-from agents import Agent, Runner, trace
-from app.config import settings
+from app.services.shared.models import GeneratedDocument
+from app.services.shared.base_agent import AgentFactory
 from app.services.prompts import CREATE_CONTENT_PROMPT
 from app.services.tools.create_tools import get_all_document_paths
-
-class GeneratedDocument(BaseModel):
-    """
-    Represents a generated document (not saved to database).
-    """
-    name: str
-    """The name of the document (filename without extension)."""
-    path: str
-    """The path where the document should be created."""
-    title: str
-    """The display title of the document."""
-    parent_id: Optional[str] = None
-    """The ID of the parent document (None for root level)."""
-    is_api_ref: bool = False
-    """Whether this is an API reference document."""
-    markdown_content_en: str
-    """The generated markdown content."""
-    markdown_content_ja: str
-    """The generated markdown content in Japanese."""
 
 class CreateContentResponse(BaseModel):
     """
@@ -37,13 +15,16 @@ class CreateContentResponse(BaseModel):
     error: Optional[str] = None
     """Error message if something went wrong."""
 
-create_content_agent = Agent(
+# Create the create content agent using the factory
+create_content_agent_instance = AgentFactory.create_agent(
     name="CreateContentAgent",
     instructions=CREATE_CONTENT_PROMPT,
-    model=settings.OPENAI_MODEL,
     output_type=CreateContentResponse,
     tools=[get_all_document_paths]
 )
+
+# Get the underlying agent for backward compatibility
+create_content_agent = create_content_agent_instance.get_agent()
 
 if __name__ == "__main__":
     # Example usage

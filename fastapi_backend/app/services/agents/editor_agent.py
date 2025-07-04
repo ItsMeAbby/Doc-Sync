@@ -1,48 +1,20 @@
 import json
-from typing import List
-from typing_extensions import Literal
-from pydantic import BaseModel
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
-from agents import Agent, Runner, trace
-from app.config import settings
-from app.services.prompts import CONTENT_EDIT_PROMPT, EDIT_SUGGESTION_PROMPT
+from agents import Runner, trace
+from app.services.shared.models import ContentChange, DocumentEdit, Edits
+from app.services.shared.base_agent import AgentFactory
+from app.services.prompts import CONTENT_EDIT_PROMPT
 from app.services.tools.edit_suggesstion_tools import get_document_by_version
 
-class ContentChange(BaseModel):
-    """
-    Represents a change to be made in the document.
-    """
-    old_string: str
-    """The text to replace (must be unique within the provided content)."""
-    new_string: str
-    """The text to replace it with (must be unique within the provided content)."""
-
-
-class DocumentEdit(BaseModel):
-    """
-    Represents a suggested edit to a document.
-    """
-    document_id: str
-    """The ID of the document to be edited."""
-    changes: List[ContentChange]
-    """Users should provide a list of changes to be made in the document."""
-    version: str
-    """The version of the document to be edited."""
-class Edits(BaseModel):
-    """
-    Represents a collection of edits to be made to multiple documents.
-    """
-    changes: List[DocumentEdit]
-    """A list of document edits to be applied."""
-edit_content_agent=Agent(
+# Create the edit content agent using the factory
+edit_content_agent_instance = AgentFactory.create_agent(
     name="ContentEditAgent",
     instructions=CONTENT_EDIT_PROMPT,
-    model=settings.OPENAI_MODEL,
     output_type=Edits,
     tools=[get_document_by_version]
 )
+
+# Get the underlying agent for backward compatibility
+edit_content_agent = edit_content_agent_instance.get_agent()
 if __name__ == "__main__":
     # Example usage
     async def main():

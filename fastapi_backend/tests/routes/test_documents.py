@@ -1,243 +1,44 @@
 import pytest
 from fastapi import status
 import uuid
-from unittest.mock import patch, AsyncMock, MagicMock
-import json
+from unittest.mock import AsyncMock, MagicMock
 from datetime import datetime
 
 
 @pytest.fixture
-def mock_process_document_content():
-    """Mock the process_document_content function."""
-    with patch('app.routes.documents.process_document_content') as mock:
-        # Set up the mock to return a dictionary with the expected fields
-        mock.return_value = {
-            "language": "en",
-            "keywords_array": ["test", "document", "api"],
-            "urls_array": ["https://example.com"],
-            "summary": "This is a test document summary.",
-            "embedding": [0.1] * 1536  # Mock embedding vector
-        }
-        # Make it work with async
-        mock.side_effect = AsyncMock(return_value=mock.return_value)
-        yield mock
-        
-        
-@pytest.fixture
-def mock_supabase():
-    """Mock the Supabase client."""
-    with patch('app.routes.documents.supabase') as mock_supabase:
-        # Create a document ID that we'll use consistently
-        doc_id = str(uuid.uuid4())
-        version_id = str(uuid.uuid4())
-        
-        # Set up mock for document creation
-        mock_insert = MagicMock()
-        mock_insert.execute.return_value.data = [{
-            "id": doc_id,
-            "title": "Test Document",
-            "path": "/test/path",
-            "name": "test-doc",
-            "is_api_ref": False,
-            "parent_id": None,
-            "is_deleted": False,
-            "created_at": datetime.now().isoformat(),
-            "current_version_id": None
-        }]
-        
-        # Set up mock for content creation
-        mock_content_insert = MagicMock()
-        mock_content_insert.execute.return_value.data = [{
-            "version": version_id,
-            "document_id": doc_id,
-            "markdown_content": "# Test Document\nThis is a test document.",
-            "language": "en",
-            "keywords_array": ["test", "document", "api"],
-            "urls_array": ["https://example.com"],
-            "summary": "This is a test document summary.",
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat()
-        }]
-        
-        # Set up mock for document update
-        mock_update = MagicMock()
-        mock_update.eq.return_value.execute.return_value.data = [{
-            "id": doc_id,
-            "title": "Updated Title",
-            "path": "/updated/path",
-            "name": "updated-doc",
-            "is_api_ref": False,
-            "parent_id": None,
-            "is_deleted": False,
-            "created_at": datetime.now().isoformat(),
-            "current_version_id": version_id
-        }]
-        
-        # Set up mock for document select
-        mock_select = MagicMock()
-        mock_select.eq.return_value.execute.return_value.data = [{
-            "id": doc_id,
-            "title": "Test Document",
-            "path": "/test/path",
-            "name": "test-doc",
-            "is_api_ref": False,
-            "parent_id": None,
-            "is_deleted": False,
-            "created_at": datetime.now().isoformat(),
-            "current_version_id": version_id
-        }]
-        
-        # Set up mock for versions select
-        mock_versions_select = MagicMock()
-        mock_versions_select.eq.return_value.order.return_value.execute.return_value.data = [
-            {
-                "version": version_id,
-                "document_id": doc_id,
-                "markdown_content": "# Test Document\nThis is a test document.",
-                "language": "en",
-                "keywords_array": ["test", "document", "api"],
-                "urls_array": ["https://example.com"],
-                "summary": "This is a test document summary.",
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat()
-            },
-            {
-                "version": str(uuid.uuid4()),
-                "document_id": doc_id,
-                "markdown_content": "# Old Version\nThis is an older version.",
-                "language": "en",
-                "keywords_array": ["old", "version"],
-                "urls_array": [],
-                "summary": "An older version.",
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat()
-            }
-        ]
-        
-        # Set up mock for latest version select
-        mock_latest_select = MagicMock()
-        mock_latest_select.eq.return_value.eq.return_value.execute.return_value.data = [
-            {
-                "version": version_id,
-                "document_id": doc_id,
-                "markdown_content": "# Test Document\nThis is a test document.",
-                "language": "en",
-                "keywords_array": ["test", "document", "api"],
-                "urls_array": ["https://example.com"],
-                "summary": "This is a test document summary.",
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat()
-            }
-        ]
-        
-        # Set up mock for versions limit
-        mock_versions_limit = MagicMock()
-        mock_versions_limit.eq.return_value.order.return_value.limit.return_value.execute.return_value.data = [
-            {
-                "version": version_id,
-                "document_id": doc_id,
-                "markdown_content": "# Test Document\nThis is a test document.",
-                "language": "en",
-                "keywords_array": ["test", "document", "api"],
-                "urls_array": ["https://example.com"],
-                "summary": "This is a test document summary.",
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat()
-            },
-            {
-                "version": str(uuid.uuid4()),
-                "document_id": doc_id,
-                "markdown_content": "# Old Version\nThis is an older version.",
-                "language": "en",
-                "keywords_array": ["old", "version"],
-                "urls_array": [],
-                "summary": "An older version.",
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat()
-            }
-        ]
-        
-        # Set up mock for root documents
-        mock_root_select = MagicMock()
-        mock_root_select.is_.return_value.eq.return_value.execute.return_value.data = [
-            {
-                "id": doc_id,
-                "title": "Test Document",
-                "path": "/test/path",
-                "name": "test-doc",
-                "is_api_ref": False,
-                "parent_id": None,
-                "is_deleted": False,
-                "created_at": datetime.now().isoformat(),
-                "current_version_id": version_id
-            }
-        ]
-        
-        # Set up mock for API refs
-        mock_refs_select = MagicMock()
-        mock_refs_select.eq.return_value.eq.return_value.execute.return_value.data = [
-            {
-                "id": doc_id,
-                "title": "Test Document",
-                "path": "/test/path",
-                "name": "test-doc",
-                "is_api_ref": True,
-                "parent_id": None,
-                "is_deleted": False,
-                "created_at": datetime.now().isoformat(),
-                "current_version_id": version_id
-            }
-        ]
-        
-        # Configure mock_supabase.table to return different mocks based on the method chain
-        def mock_table_side_effect(table_name):
-            mock_table = MagicMock()
-            
-            if table_name == "documents":
-                # Insert operation
-                mock_table.insert.return_value = mock_insert
-                
-                # Select operations
-                mock_table.select.return_value = mock_select
-                
-                # Update operation
-                mock_table.update.return_value = mock_update
-                
-                # For root documents
-                mock_table.select.return_value.is_ = lambda field, value: mock_root_select
-                
-                # For API refs
-                mock_table.select.return_value.eq = lambda field, value: (
-                    mock_refs_select if field == "is_api_ref" else mock_select
-                )
-            
-            elif table_name == "document_contents":
-                # Insert operation
-                mock_table.insert.return_value = mock_content_insert
-                
-                # Select operations for versions
-                mock_table.select.return_value = mock_versions_select
-                
-                # For latest version
-                mock_table.select.return_value.eq = lambda field, value: mock_latest_select
-                
-                # For previous version
-                mock_table.select.return_value.eq.return_value.order = lambda field, desc: mock_versions_limit
-            
-            return mock_table
-        
-        mock_supabase.table.side_effect = mock_table_side_effect
-        
-        # Store the IDs for reference in tests
-        mock_supabase.test_doc_id = doc_id
-        mock_supabase.test_version_id = version_id
-        
-        yield mock_supabase
+def mock_document_service(test_client):
+    """Mock the DocumentService."""
+    mock_service = MagicMock()
+    
+    # Mock document service methods with proper async setup
+    mock_service.create_document = AsyncMock()
+    mock_service.get_document = AsyncMock()
+    mock_service.get_root_documents = AsyncMock()
+    mock_service.get_all_documents = AsyncMock()
+    mock_service.update_document = AsyncMock()
+    mock_service.create_document_version = AsyncMock()
+    mock_service.list_document_versions = AsyncMock()
+    mock_service.get_document_version = AsyncMock()
+    mock_service.get_child_documents = AsyncMock()
+    mock_service.get_document_parents = AsyncMock()
+    
+    # Override the dependency
+    from app.main import app
+    from app.api.dependencies import get_document_service
+    
+    app.dependency_overrides[get_document_service] = lambda: mock_service
+    
+    yield mock_service
+    
+    # Clean up
+    app.dependency_overrides.clear()
+
+
 
 
 class TestDocuments:
     @pytest.mark.asyncio(loop_scope="function")
-    async def test_create_document(self, test_client, mock_process_document_content, mock_supabase):
+    async def test_create_document(self, test_client, mock_document_service):
         """Test creating a document with its first version."""
         # Document data
         document_data = {
@@ -249,140 +50,252 @@ class TestDocuments:
         
         # Content data
         content_data = {
-            "markdown_content": "# Test Document\nThis is a test document."
+            "markdown_content": "# Test Document\nThis is a test document.",
+            "language": "en"
         }
         
-        # Combine both for the API call
+        # Setup mock response
+        doc_id = str(uuid.uuid4())
+        version_id = str(uuid.uuid4())
+        expected_doc = {
+            **document_data,
+            "id": doc_id,
+            "current_version_id": version_id,
+            "created_at": datetime.now().isoformat(),
+            "is_deleted": False
+        }
+        mock_document_service.create_document.return_value = expected_doc
+        
+        # Create document - send as separate body parameters
         request_data = {
             "document": document_data,
             "content": content_data
         }
-        
-        # Create document
-        response = await test_client.post("/documents/", json=request_data)
+        response = await test_client.post("/api/documents/", json=request_data)
         
         # Verify response
+        if response.status_code == 422:
+            print(f"Validation Error: {response.json()}")
         assert response.status_code == status.HTTP_200_OK
         created_doc = response.json()
         assert created_doc["title"] == document_data["title"]
         assert created_doc["path"] == document_data["path"]
         assert created_doc["name"] == document_data["name"]
-        assert "id" in created_doc
-        assert "current_version_id" in created_doc
+        assert created_doc["id"] == doc_id
+        assert created_doc["current_version_id"] == version_id
         
-        # Verify mock was called
-        mock_process_document_content.assert_called_once_with(
-            content_data["markdown_content"], 
-            None  # language is not provided in the test
-        )
+        # Verify service was called with correct parameters
+        mock_document_service.create_document.assert_called_once()
+        call_args = mock_document_service.create_document.call_args
         
-        # Return the document ID from our mock
-        return mock_supabase.test_doc_id
+        # Check that the document data was passed correctly
+        doc_arg = call_args[0][0]  # First positional argument
+        assert doc_arg.title == document_data["title"]
+        assert doc_arg.path == document_data["path"]
+        assert doc_arg.name == document_data["name"]
+        
+        # Check that the content data was passed correctly
+        content_arg = call_args[0][1]  # Second positional argument
+        assert content_arg.markdown_content == content_data["markdown_content"]
+        assert content_arg.language == content_data["language"]
     
     @pytest.mark.asyncio(loop_scope="function")
-    async def test_get_document(self, test_client, mock_process_document_content, mock_supabase):
+    async def test_get_document(self, test_client, mock_document_service):
         """Test retrieving a document."""
-        # Use document ID from mock
-        doc_id = mock_supabase.test_doc_id
+        doc_id = str(uuid.uuid4())
+        expected_doc = {
+            "id": doc_id,
+            "title": "Test Document",
+            "path": "/test/path", 
+            "name": "test-doc",
+            "is_api_ref": False,
+            "parent_id": None,
+            "is_deleted": False,
+            "created_at": datetime.now().isoformat(),
+            "current_version_id": str(uuid.uuid4())
+        }
+        mock_document_service.get_document.return_value = expected_doc
         
         # Get the document
-        response = await test_client.get(f"/documents/{doc_id}")
+        response = await test_client.get(f"/api/documents/{doc_id}")
         
         # Verify response
         assert response.status_code == status.HTTP_200_OK
         doc = response.json()
         assert doc["id"] == doc_id
-        assert "title" in doc
-        assert "path" in doc
-        assert "name" in doc
+        assert doc["title"] == expected_doc["title"]
+        assert doc["path"] == expected_doc["path"]
+        assert doc["name"] == expected_doc["name"]
+        
+        # Verify service was called
+        mock_document_service.get_document.assert_called_once_with(doc_id)
     
     @pytest.mark.asyncio(loop_scope="function")
-    async def test_create_document_version(self, test_client, mock_process_document_content, mock_supabase):
+    async def test_create_document_version(self, test_client, mock_document_service):
         """Test creating a new version for an existing document."""
-        # Use document ID from mock
-        doc_id = mock_supabase.test_doc_id
+        doc_id = str(uuid.uuid4())
+        version_id = str(uuid.uuid4())
         
-        # Create new version
         content_data = {
             "markdown_content": "# Updated Document\nThis is an updated version of the test document."
         }
         
-        response = await test_client.post(f"/documents/{doc_id}/versions", json=content_data)
+        expected_version = {
+            "document_id": doc_id,
+            "version": version_id,
+            "markdown_content": content_data["markdown_content"],
+            "language": "en",
+            "keywords_array": ["updated", "document"],
+            "summary": "Updated document summary",
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        mock_document_service.create_document_version.return_value = expected_version
         
-        # Verify response
-        assert response.status_code == status.HTTP_200_OK
-        version = response.json()
-        assert version["document_id"] == doc_id
-        assert "version" in version
-        assert version["markdown_content"] == content_data["markdown_content"]
-        
-        # Verify mock was called
-        mock_process_document_content.assert_called_with(
-            content_data["markdown_content"], 
-            None  # language is not provided in the test
-        )
-    
-    @pytest.mark.asyncio(loop_scope="function")
-    async def test_get_document_versions(self, test_client, mock_supabase):
-        """Test retrieving all versions of a document."""
-        # Use document ID from mock
-        doc_id = mock_supabase.test_doc_id
-        
-        # Get all versions
-        response = await test_client.get(f"/documents/{doc_id}/versions")
-        
-        # Verify response
-        assert response.status_code == status.HTTP_200_OK
-        versions = response.json()
-        assert len(versions) >= 2  # Should have at least 2 versions
-        assert all(v["document_id"] == doc_id for v in versions)
-    
-    @pytest.mark.asyncio(loop_scope="function")
-    async def test_get_latest_version(self, test_client, mock_supabase):
-        """Test retrieving the latest version of a document."""
-        # Use document ID and version ID from mock
-        doc_id = mock_supabase.test_doc_id
-        version_id = mock_supabase.test_version_id
-        
-        # Get latest version
-        response = await test_client.get(f"/documents/{doc_id}/versions/latest")
+        response = await test_client.post(f"/api/documents/{doc_id}/versions", json=content_data)
         
         # Verify response
         assert response.status_code == status.HTTP_200_OK
         version = response.json()
         assert version["document_id"] == doc_id
         assert version["version"] == version_id
+        assert version["markdown_content"] == content_data["markdown_content"]
+        
+        # Verify service was called
+        mock_document_service.create_document_version.assert_called_once()
     
     @pytest.mark.asyncio(loop_scope="function")
-    async def test_get_previous_version(self, test_client, mock_supabase):
-        """Test retrieving the previous (second-latest) version of a document."""
-        # Use document ID from mock
-        doc_id = mock_supabase.test_doc_id
+    async def test_get_document_versions(self, test_client, mock_document_service):
+        """Test retrieving all versions of a document."""
+        doc_id = str(uuid.uuid4())
+        expected_versions = [
+            {
+                "document_id": doc_id,
+                "version": str(uuid.uuid4()),
+                "markdown_content": "# Test Document v1",
+                "language": "en",
+                "keywords_array": ["test", "document"],
+                "summary": "Test document v1 summary",
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
+            },
+            {
+                "document_id": doc_id,
+                "version": str(uuid.uuid4()),
+                "markdown_content": "# Test Document v2",
+                "language": "en",
+                "keywords_array": ["test", "document", "v2"],
+                "summary": "Test document v2 summary",
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat()
+            }
+        ]
+        mock_document_service.list_document_versions.return_value = expected_versions
         
-        # Get previous version
-        response = await test_client.get(f"/documents/{doc_id}/versions/previous")
+        # Get all versions
+        response = await test_client.get(f"/api/documents/{doc_id}/versions")
+        
+        # Verify response
+        assert response.status_code == status.HTTP_200_OK
+        versions = response.json()
+        assert len(versions) == 2
+        assert all(v["document_id"] == doc_id for v in versions)
+        
+        # Verify service was called
+        mock_document_service.list_document_versions.assert_called_once_with(doc_id)
+    
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_get_latest_version(self, test_client, mock_document_service):
+        """Test retrieving the latest version of a document."""
+        doc_id = str(uuid.uuid4())
+        version_id = str(uuid.uuid4())
+        
+        expected_version = {
+            "document_id": doc_id,
+            "version": version_id,
+            "markdown_content": "# Latest Version",
+            "language": "en",
+            "keywords_array": ["latest", "version"],
+            "summary": "Latest version summary",
+            "name": "test-doc",
+            "title": "Test Document",
+            "path": "/test/path",
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        mock_document_service.get_document_version.return_value = expected_version
+        
+        # Get latest version
+        response = await test_client.get(f"/api/documents/{doc_id}/versions/latest")
         
         # Verify response
         assert response.status_code == status.HTTP_200_OK
         version = response.json()
         assert version["document_id"] == doc_id
-        assert "version" in version
-        assert "markdown_content" in version
+        assert version["version"] == version_id
+        
+        # Verify service was called
+        mock_document_service.get_document_version.assert_called_once_with(doc_id, "latest")
     
     @pytest.mark.asyncio(loop_scope="function")
-    async def test_update_document(self, test_client, mock_supabase):
-        """Test updating a document's metadata."""
-        # Use document ID from mock
-        doc_id = mock_supabase.test_doc_id
+    async def test_get_previous_version(self, test_client, mock_document_service):
+        """Test retrieving a specific version of a document."""
+        doc_id = str(uuid.uuid4())
+        version_id = str(uuid.uuid4())
         
-        # Update document
+        expected_version = {
+            "document_id": doc_id,
+            "version": version_id,
+            "markdown_content": "# Previous Version",
+            "language": "en",
+            "keywords_array": ["previous", "version"],
+            "summary": "Previous version summary",
+            "name": "test-doc",
+            "title": "Test Document",
+            "path": "/test/path",
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        mock_document_service.get_document_version.return_value = expected_version
+        
+        # Get specific version
+        response = await test_client.get(f"/api/documents/{doc_id}/versions/{version_id}")
+        
+        # Verify response
+        assert response.status_code == status.HTTP_200_OK
+        version = response.json()
+        assert version["document_id"] == doc_id
+        assert version["version"] == version_id
+        assert "markdown_content" in version
+        
+        # Verify service was called
+        mock_document_service.get_document_version.assert_called_once_with(doc_id, version_id)
+    
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_update_document(self, test_client, mock_document_service):
+        """Test updating a document's metadata."""
+        doc_id = str(uuid.uuid4())
+        
         update_data = {
             "title": "Updated Title",
             "path": "/updated/path",
             "name": "updated-doc"
         }
         
-        response = await test_client.put(f"/documents/{doc_id}", json=update_data)
+        expected_updated_doc = {
+            "id": doc_id,
+            "title": "Updated Title",
+            "path": "/updated/path",
+            "name": "updated-doc",
+            "is_api_ref": False,
+            "parent_id": None,
+            "is_deleted": False,
+            "created_at": datetime.now().isoformat(),
+            "current_version_id": str(uuid.uuid4())
+        }
+        mock_document_service.update_document.return_value = expected_updated_doc
+        
+        response = await test_client.put(f"/api/documents/{doc_id}", json=update_data)
         
         # Verify response
         assert response.status_code == status.HTTP_200_OK
@@ -391,39 +304,382 @@ class TestDocuments:
         assert updated_doc["title"] == update_data["title"]
         assert updated_doc["path"] == update_data["path"]
         assert updated_doc["name"] == update_data["name"]
-    
-    @pytest.mark.asyncio(loop_scope="function")
-    async def test_get_nonexistent_document(self, test_client, mock_supabase):
-        """Test getting a document that doesn't exist."""
-        # Mock a 404 response for a non-existent document
-        mock_supabase.table.return_value.select.return_value.eq.return_value.execute.return_value.data = []
         
-        random_id = str(uuid.uuid4())
-        response = await test_client.get(f"/documents/{random_id}")
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        # Verify service was called
+        mock_document_service.update_document.assert_called_once()
     
     @pytest.mark.asyncio(loop_scope="function")
-    async def test_get_root_documents(self, test_client, mock_supabase):
+    async def test_get_nonexistent_document(self, test_client, mock_document_service):
+        """Test getting a document that doesn't exist."""
+        from app.core.exceptions import DocumentNotFoundError
+        
+        # Mock service to raise DocumentNotFoundError
+        random_id = str(uuid.uuid4())
+        mock_document_service.get_document.side_effect = DocumentNotFoundError(random_id)
+        
+        response = await test_client.get(f"/api/documents/{random_id}")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        
+        # Verify service was called
+        mock_document_service.get_document.assert_called_once_with(random_id)
+    
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_get_root_documents(self, test_client, mock_document_service):
         """Test getting root-level documents (no parent)."""
+        expected_root_docs = [
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Root Document 1",
+                "path": "/root1",
+                "name": "root-doc-1",
+                "is_api_ref": True,
+                "parent_id": None,
+                "is_deleted": False,
+                "created_at": datetime.now().isoformat(),
+                "current_version_id": None
+            }
+        ]
+        mock_document_service.get_root_documents.return_value = expected_root_docs
+        
         # Get root documents
-        response = await test_client.get("/documents/root")
+        response = await test_client.get("/api/documents/root")
         
         # Verify response
         assert response.status_code == status.HTTP_200_OK
         root_docs = response.json()
         assert isinstance(root_docs, list)
-        # Should contain at least one document
-        assert len(root_docs) >= 1
+        assert len(root_docs) == 1
+        assert root_docs[0]["title"] == "Root Document 1"
+        
+        # Verify service was called
+        mock_document_service.get_root_documents.assert_called_once_with(True)
     
     @pytest.mark.asyncio(loop_scope="function")
-    async def test_get_api_refs(self, test_client, mock_supabase):
-        """Test getting API reference documents."""
-        # Get API references
-        response = await test_client.get("/documents/refs")
+    async def test_get_child_documents(self, test_client, mock_document_service):
+        """Test getting child documents of a parent."""
+        parent_id = str(uuid.uuid4())
+        expected_children = [
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Child Document 1",
+                "path": "/parent/child1",
+                "name": "child-doc-1",
+                "is_api_ref": False,
+                "parent_id": parent_id,
+                "is_deleted": False,
+                "created_at": datetime.now().isoformat(),
+                "current_version_id": None
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Child Document 2", 
+                "path": "/parent/child2",
+                "name": "child-doc-2",
+                "is_api_ref": False,
+                "parent_id": parent_id,
+                "is_deleted": False,
+                "created_at": datetime.now().isoformat(),
+                "current_version_id": None
+            }
+        ]
+        mock_document_service.get_child_documents.return_value = expected_children
+        
+        # Get child documents
+        response = await test_client.get(f"/api/documents/{parent_id}/children")
+        
+        # Verify response
+        assert response.status_code == status.HTTP_200_OK
+        children = response.json()
+        assert isinstance(children, list)
+        assert len(children) == 2
+        assert all(child["parent_id"] == parent_id for child in children)
+        
+        # Verify service was called
+        mock_document_service.get_child_documents.assert_called_once_with(parent_id)
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_get_document_parents(self, test_client, mock_document_service):
+        """Test getting parent hierarchy of a document."""
+        doc_id = str(uuid.uuid4())
+        parent_id = str(uuid.uuid4())
+        grandparent_id = str(uuid.uuid4())
+        
+        expected_parents = [
+            {
+                "id": grandparent_id,
+                "title": "Grandparent Document",
+                "path": "/grandparent",
+                "name": "grandparent-doc",
+                "is_api_ref": False,
+                "parent_id": None,
+                "is_deleted": False,
+                "created_at": datetime.now().isoformat(),
+                "current_version_id": None
+            },
+            {
+                "id": parent_id,
+                "title": "Parent Document",
+                "path": "/grandparent/parent",
+                "name": "parent-doc",
+                "is_api_ref": False,
+                "parent_id": grandparent_id,
+                "is_deleted": False,
+                "created_at": datetime.now().isoformat(),
+                "current_version_id": None
+            }
+        ]
+        mock_document_service.get_document_parents.return_value = expected_parents
+        
+        # Get parent documents
+        response = await test_client.get(f"/api/documents/{doc_id}/parents")
+        
+        # Verify response
+        assert response.status_code == status.HTTP_200_OK
+        parents = response.json()
+        assert isinstance(parents, list)
+        assert len(parents) == 2
+        
+        # Verify service was called
+        mock_document_service.get_document_parents.assert_called_once_with(doc_id)
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_get_all_documents(self, test_client, mock_document_service):
+        """Test getting all documents with filters."""
+        expected_response = {
+            "documentation": [
+                {
+                    "id": str(uuid.uuid4()),
+                    "title": "Documentation Doc",
+                    "path": "/docs/doc1",
+                    "name": "doc1",
+                    "is_api_ref": False,
+                    "parent_id": None,
+                    "is_deleted": False,
+                    "created_at": datetime.now().isoformat(),
+                    "current_version_id": None,
+                    "markdown_content": "# Documentation",
+                    "language": "en",
+                    "keywords_array": ["doc", "test"],
+                    "children": []
+                }
+            ],
+            "api_references": [
+                {
+                    "id": str(uuid.uuid4()),
+                    "title": "API Reference Doc",
+                    "path": "/api/ref1",
+                    "name": "api-ref1",
+                    "is_api_ref": True,
+                    "parent_id": None,
+                    "is_deleted": False,
+                    "created_at": datetime.now().isoformat(),
+                    "current_version_id": None,
+                    "markdown_content": "# API Reference",
+                    "language": "en",
+                    "keywords_array": ["api", "reference"],
+                    "children": []
+                }
+            ]
+        }
+        mock_document_service.get_all_documents.return_value = expected_response
+        
+        # Get all documents
+        response = await test_client.get("/api/documents/")
+        
+        # Verify response
+        assert response.status_code == status.HTTP_200_OK
+        all_docs = response.json()
+        assert "documentation" in all_docs
+        assert "api_references" in all_docs
+        assert len(all_docs["documentation"]) == 1
+        assert len(all_docs["api_references"]) == 1
+        
+        # Verify service was called with default parameters
+        mock_document_service.get_all_documents.assert_called_once_with(False, None, None)
+
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_get_all_documents_with_filters(self, test_client, mock_document_service):
+        """Test getting all documents with query parameters."""
+        expected_response = {
+            "en": {
+                "documentation": [],
+                "api_references": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "title": "API Reference Doc",
+                        "path": "/api/ref1",
+                        "name": "api-ref1",
+                        "is_api_ref": True,
+                        "parent_id": None,
+                        "is_deleted": False,
+                        "created_at": datetime.now().isoformat(),
+                        "current_version_id": None,
+                        "markdown_content": "# API Reference",
+                        "language": "en",
+                        "keywords_array": ["api", "reference"],
+                        "children": []
+                    }
+                ]
+            },
+            "ja": {
+                "documentation": [],
+                "api_references": []
+            }
+        }
+        mock_document_service.get_all_documents.return_value = expected_response
+        
+        # Get all documents with filters
+        response = await test_client.get("/api/documents/?is_api_ref=true&is_deleted=false")
+        
+        # Verify response
+        assert response.status_code == status.HTTP_200_OK
+        all_docs = response.json()
+        assert "en" in all_docs
+        assert "ja" in all_docs
+        assert "documentation" in all_docs["en"]
+        assert "api_references" in all_docs["en"]
+        assert len(all_docs["en"]["documentation"]) == 0
+        assert len(all_docs["en"]["api_references"]) == 1
+        
+        # Verify service was called with correct parameters
+        mock_document_service.get_all_documents.assert_called_once_with(False, True, None)
+    
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_get_api_refs(self, test_client, mock_document_service):
+        """Test getting API reference documents via root endpoint."""
+        expected_api_refs = [
+            {
+                "id": str(uuid.uuid4()),
+                "title": "API Reference 1",
+                "path": "/api/ref1",
+                "name": "api-ref-1",
+                "is_api_ref": True,
+                "parent_id": None,
+                "is_deleted": False,
+                "created_at": datetime.now().isoformat(),
+                "current_version_id": None
+            }
+        ]
+        mock_document_service.get_root_documents.return_value = expected_api_refs
+        
+        # Get API references via root endpoint with is_api_ref=true
+        response = await test_client.get("/api/documents/root?is_api_ref=true")
         
         # Verify response
         assert response.status_code == status.HTTP_200_OK
         api_refs = response.json()
         assert isinstance(api_refs, list)
-        assert len(api_refs) >= 1
+        assert len(api_refs) == 1
         assert all(doc["is_api_ref"] for doc in api_refs)
+        
+        # Verify service was called
+        mock_document_service.get_root_documents.assert_called_once_with(True)
+    
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_get_child_documents(self, test_client, mock_document_service):
+        """Test getting child documents of a parent."""
+        parent_id = str(uuid.uuid4())
+        expected_children = [
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Child Document 1",
+                "path": "/parent/child1",
+                "name": "child-doc-1",
+                "is_api_ref": False,
+                "parent_id": parent_id,
+                "is_deleted": False,
+                "created_at": datetime.now().isoformat(),
+                "current_version_id": None
+            }
+        ]
+        mock_document_service.get_child_documents.return_value = expected_children
+        
+        # Get child documents
+        response = await test_client.get(f"/api/documents/{parent_id}/children")
+        
+        # Verify response
+        assert response.status_code == status.HTTP_200_OK
+        children = response.json()
+        assert isinstance(children, list)
+        assert len(children) == 1
+        assert children[0]["parent_id"] == parent_id
+        
+        # Verify service was called
+        mock_document_service.get_child_documents.assert_called_once_with(parent_id)
+    
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_get_document_parents(self, test_client, mock_document_service):
+        """Test getting parent documents (full lineage) of a document."""
+        doc_id = str(uuid.uuid4())
+        expected_parents = [
+            {
+                "id": str(uuid.uuid4()),
+                "title": "Root Parent",
+                "path": "/root",
+                "name": "root-parent",
+                "is_api_ref": False,
+                "parent_id": None,
+                "is_deleted": False,
+                "created_at": datetime.now().isoformat(),
+                "current_version_id": None
+            }
+        ]
+        mock_document_service.get_document_parents.return_value = expected_parents
+        
+        # Get document parents
+        response = await test_client.get(f"/api/documents/{doc_id}/parents")
+        
+        # Verify response
+        assert response.status_code == status.HTTP_200_OK
+        parents = response.json()
+        assert isinstance(parents, list)
+        assert len(parents) == 1
+        
+        # Verify service was called
+        mock_document_service.get_document_parents.assert_called_once_with(doc_id)
+    
+    @pytest.mark.asyncio(loop_scope="function")
+    async def test_get_all_documents(self, test_client, mock_document_service):
+        """Test getting all documents with filters."""
+        expected_response = {
+            "en": {
+                "documentation": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "title": "Documentation 1",
+                        "path": "/docs/doc1",
+                        "name": "doc-1",
+                        "is_api_ref": False,
+                        "parent_id": None,
+                        "is_deleted": False,
+                        "created_at": datetime.now().isoformat(),
+                        "current_version_id": None,
+                        "markdown_content": "# Documentation 1",
+                        "language": "en",
+                        "keywords_array": ["docs", "api"],
+                        "children": []
+                    }
+                ],
+                "api_references": []
+            },
+            "ja": {
+                "documentation": [],
+                "api_references": []
+            }
+        }
+        mock_document_service.get_all_documents.return_value = expected_response
+        
+        # Get all documents
+        response = await test_client.get("/api/documents/")
+        
+        # Verify response
+        assert response.status_code == status.HTTP_200_OK
+        result = response.json()
+        assert "en" in result
+        assert "ja" in result
+        assert "documentation" in result["en"]
+        assert "api_references" in result["en"]
+        assert len(result["en"]["documentation"]) == 1
+        
+        # Verify service was called with defaults
+        mock_document_service.get_all_documents.assert_called_once_with(False, None, None)

@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/components/ui/use-toast';
+import DocumentMentionInput from '@/components/DocumentMentionInput';
 
 export default function DocumentationChangePage() {
   const searchParams = useSearchParams();
@@ -122,157 +123,157 @@ export default function DocumentationChangePage() {
         payload.document_id = documentId;
       }
 
-      // const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/edit/`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(payload),
-      // });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/edit/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-      // if (!res.ok) {
-      //   throw new Error(`API request failed: ${res.status} ${res.statusText}`);
-      // }
+      if (!res.ok) {
+        throw new Error(`API request failed: ${res.status} ${res.statusText}`);
+      }
 
-      // const data: EditDocumentationResponse = await res.json();
+      const data: EditDocumentationResponse = await res.json();
       // Simulate API response for demonstration purposes
-      const data: EditDocumentationResponse = {
-  "edit": [
-    {
-      "document_id": "a1d44224-d450-4278-861e-50878445f82b",
-      "changes": [
-        {
-          "old_string": "# Agents\n\nAgents are the core building block in your apps. An agent is a large language model (LLM), configured with instructions and tools.\n",
-          "new_string": "# Agents\n\n> ⚠️ **Important:** Using agents as tools (via `as_tool`) is deprecated and no longer supported. Agents may only be coordinated or invoked using handoff.\n\nAgents are the core building block in your apps. An agent is a large language model (LLM), configured with instructions and tools.\n"
-        },
-        {
-          "old_string": "- `tools`: Tools that the agent can use to achieve its tasks.\n\n```md-code__content\nfrom agents import Agent, ModelSettings, function_tool\n\n@function_tool\ndef get_weather(city: str) -> str:\n    return f\"The weather in {city} is sunny\"\n\nagent = Agent(\n    name=\"Haiku agent\",\n    instructions=\"Always respond in haiku form\",\n    model=\"o3-mini\",\n    tools=[get_weather],\n)\n\n```\n",
-          "new_string": "- `tools`: Tools that the agent can use to achieve its tasks.\n\n**Note:** Agents can no longer be used as tools via `as_tool`. To invoke other agents, you must use the handoff mechanism.\n\n```md-code__content\nfrom agents import Agent, ModelSettings, function_tool\n\n@function_tool\ndef get_weather(city: str) -> str:\n    return f\"The weather in {city} is sunny\"\n\nagent = Agent(\n    name=\"Haiku agent\",\n    instructions=\"Always respond in haiku form\",\n    model=\"o3-mini\",\n    tools=[get_weather],\n)\n\n```\n"
-        },
-        {
-          "old_string": "## Handoffs\n\nHandoffs are sub-agents that the agent can delegate to. You provide a list of handoffs, and the agent can choose to delegate to them if relevant. This is a powerful pattern that allows orchestrating modular, specialized agents that excel at a single task. Read more in the [handoffs](https://openai.github.io/openai-agents-python/handoffs/) documentation.\n\n```md-code__content\nfrom agents import Agent\n\nbooking_agent = Agent(...)\nrefund_agent = Agent(...)\n\ntriage_agent = Agent(\n    name=\"Triage agent\",\n    instructions=(\n        \"Help the user with their questions.\"\n        \"If they ask about booking, handoff to the booking agent.\"\n        \"If they ask about refunds, handoff to the refund agent.\"\n    ),\n    handoffs=[booking_agent, refund_agent],\n)\n\n```\n",
-          "new_string": "## Handoffs\n\nHandoffs are sub-agents that the agent can delegate to. You provide a list of handoffs, and the agent can choose to delegate to them if relevant. This is a powerful pattern that allows orchestrating modular, specialized agents that excel at a single task. **To invoke other agents, you must use the handoff mechanism.** Read more in the [handoffs](https://openai.github.io/openai-agents-python/handoffs/) documentation.\n\n```md-code__content\nfrom agents import Agent\n\nbooking_agent = Agent(...)\nrefund_agent = Agent(...)\n\ntriage_agent = Agent(\n    name=\"Triage agent\",\n    instructions=(\n        \"Help the user with their questions.\"\n        \"If they ask about booking, handoff to the booking agent.\"\n        \"If they ask about refunds, handoff to the refund agent.\"\n    ),\n    handoffs=[booking_agent, refund_agent],\n)\n\n```\n"
-        }
-      ],
-      "version": "39c34059-97d3-488f-ab79-eca7dbd5fba4"
-    },
-    {
-      "document_id": "e76358db-8837-4715-9488-a139bf680536",
-      "changes": [
-        {
-          "old_string": "## ツールとしてのエージェント\n\n一部のワークフローでは、ハンドオフせずに中央のエージェントが複数の専門エージェントをオーケストレーションしたい場合があります。そのような場合、エージェントをツールとしてモデル化できます。\n\n```md-code__content\nfrom agents import Agent, Runner\nimport asyncio\n\nspanish_agent = Agent(\n    name=\"Spanish agent\",\n    instructions=\"You translate the user's message to Spanish\",\n)\n\nfrench_agent = Agent(\n    name=\"French agent\",\n    instructions=\"You translate the user's message to French\",\n)\n\norchestrator_agent = Agent(\n    name=\"orchestrator_agent\",\n    instructions=(\n        \"You are a translation agent. You use the tools given to you to translate.\"\n        \"If asked for multiple translations, you call the relevant tools.\"\n    ),\n    tools=[\\\n        spanish_agent.as_tool(\\\n            tool_name=\"translate_to_spanish\",\\\n            tool_description=\"Translate the user's message to Spanish\",\\\n        ),\\\n        french_agent.as_tool(\\\n            tool_name=\"translate_to_french\",\\\n            tool_description=\"Translate the user's message to French\",\\\n        ),\\\n    ],\n)\n\nasync def main():\n    result = await Runner.run(orchestrator_agent, input=\"Say 'Hello, how are you?' in Spanish.\")\n    print(result.final_output)\n\n```\n\n### ツールエージェントのカスタマイズ\n\n`agent.as_tool` 関数はエージェントを簡単にツール化するためのヘルパーです。ただし、すべての設定に対応しているわけではありません（例: `max_turns` は設定不可）。高度なユースケースでは、ツール実装内で `Runner.run` を直接使用してください。\n\n```md-code__content\n@function_tool\nasync def run_my_agent() -> str:\n  \"\"\"A tool that runs the agent with custom configs\".\n\n    agent = Agent(name=\"My agent\", instructions=\"...\")\n\n    result = await Runner.run(\n        agent,\n        input=\"...\",\n        max_turns=5,\n        run_config=...\n    )\n\n    return str(result.final_output)\n\n```\n",
-          "new_string": "## エージェントの as_tool メソッドによるツール化は廃止されました。今後は handoff による間接呼び出しのみサポートされます。\n\n以前存在していた「ツールとしてのエージェント（agent.as_tool）」に関する説明・コード例・推奨文は廃止されました。\n\n他エージェントを呼び出す場合には handoff を利用してください。\n"
-        }
-      ],
-      "version": "05514707-3bc2-4298-a4c9-129a303ae2a2"
-    },
-    {
-      "document_id": "d123c732-7f44-4cf0-aafb-13c5bb160bc6",
-      "changes": [
-        {
-          "old_string": "[Skip to content](https://openai.github.io/openai-agents-python/handoffs/#handoffs)\n\n# Handoffs\n\nHandoffs allow an agent to delegate tasks to another agent. This is particularly useful in scenarios where different agents specialize in distinct areas. For example, a customer support app might have agents that each specifically handle tasks like order status, refunds, FAQs, etc.\n",
-          "new_string": "[Skip to content](https://openai.github.io/openai-agents-python/handoffs/#handoffs)\n\n> ⚠️ **Agents can only be invoked using the handoff mechanism. The use of agents as tools (`as_tool`) is no longer supported.**\n\n# Handoffs\n\nHandoffs allow an agent to delegate tasks to another agent. This is particularly useful in scenarios where different agents specialize in distinct areas. For example, a customer support app might have agents that each specifically handle tasks like order status, refunds, FAQs, etc.\n"
-        },
-        {
-          "old_string": "Handoffs are represented as tools to the LLM. So if there's a handoff to an agent named `Refund Agent`, the tool would be called `transfer_to_refund_agent`.\n\n## Creating a handoff\n\nAll agents have a [`handoffs`](https://openai.github.io/openai-agents-python/ref/agent/#agents.agent.Agent.handoffs \"handoffs            class-attribute       instance-attribute   \") param, which can either take an `Agent` directly, or a `Handoff` object that customizes the Handoff.\n\nYou can create a handoff using the [`handoff()`](https://openai.github.io/openai-agents-python/ref/handoffs/#agents.handoffs.handoff \"handoff\") function provided by the Agents SDK. This function allows you to specify the agent to hand off to, along with optional overrides and input filters.\n\n### Basic Usage\n",
-          "new_string": "Handoffs are represented as tools to the LLM. So if there's a handoff to an agent named `Refund Agent`, the tool would be called `transfer_to_refund_agent`.\n\n**When invoking another agent, always use handoff.**\n\n## Creating a handoff\n\nAll agents have a [`handoffs`](https://openai.github.io/openai-agents-python/ref/agent/#agents.agent.Agent.handoffs \"handoffs            class-attribute       instance-attribute   \") param, which can either take an `Agent` directly, or a `Handoff` object that customizes the Handoff.\n\nYou can create a handoff using the [`handoff()`](https://openai.github.io/openai-agents-python/ref/handoffs/#agents.handoffs.handoff \"handoff\") function provided by the Agents SDK. This function allows you to specify the agent to hand off to, along with optional overrides and input filters.\n\n### Basic Usage\n"
-        },
-        {
-          "old_string": "from agents import Agent, handoff\n\nbilling_agent = Agent(name=\"Billing agent\")\nrefund_agent = Agent(name=\"Refund agent\")\n\ntriage_agent = Agent(name=\"Triage agent\", handoffs=[billing_agent, handoff(refund_agent)])\n\n```\n\n### Customizing handoffs via the `handoff()` function\n",
-          "new_string": "from agents import Agent, handoff\n\nbilling_agent = Agent(name=\"Billing agent\")\nrefund_agent = Agent(name=\"Refund agent\")\n\n# When invoking another agent, always use handoff.\ntriage_agent = Agent(name=\"Triage agent\", handoffs=[billing_agent, handoff(refund_agent)])\n\n```\n\n### Customizing handoffs via the `handoff()` function\n"
-        },
-        {
-          "old_string": "from agents import Agent, handoff, RunContextWrapper\n\ndef on_handoff(ctx: RunContextWrapper[None]):\n    print(\"Handoff called\")\n\nagent = Agent(name=\"My agent\")\n\nhandoff_obj = handoff(\n    agent=agent,\n    on_handoff=on_handoff,\n    tool_name_override=\"custom_handoff_tool\",\n    tool_description_override=\"Custom description\",\n)\n\n```\n",
-          "new_string": "from agents import Agent, handoff, RunContextWrapper\n\ndef on_handoff(ctx: RunContextWrapper[None]):\n    print(\"Handoff called\")\n\nagent = Agent(name=\"My agent\")\n\n# When invoking another agent, always use handoff.\nhandoff_obj = handoff(\n    agent=agent,\n    on_handoff=on_handoff,\n    tool_name_override=\"custom_handoff_tool\",\n    tool_description_override=\"Custom description\",\n)\n\n```\n"
-        },
-        {
-          "old_string": "from pydantic import BaseModel\n\nfrom agents import Agent, handoff, RunContextWrapper\n\nclass EscalationData(BaseModel):\n    reason: str\n\nasync def on_handoff(ctx: RunContextWrapper[None], input_data: EscalationData):\n    print(f\"Escalation agent called with reason: {input_data.reason}\")\n\nagent = Agent(name=\"Escalation agent\")\n\nhandoff_obj = handoff(\n    agent=agent,\n    on_handoff=on_handoff,\n    input_type=EscalationData,\n)\n\n```\n",
-          "new_string": "from pydantic import BaseModel\n\nfrom agents import Agent, handoff, RunContextWrapper\n\nclass EscalationData(BaseModel):\n    reason: str\n\nasync def on_handoff(ctx: RunContextWrapper[None], input_data: EscalationData):\n    print(f\"Escalation agent called with reason: {input_data.reason}\")\n\nagent = Agent(name=\"Escalation agent\")\n\n# When invoking another agent, always use handoff.\nhandoff_obj = handoff(\n    agent=agent,\n    on_handoff=on_handoff,\n    input_type=EscalationData,\n)\n\n```\n"
-        },
-        {
-          "old_string": "from agents import Agent, handoff\nfrom agents.extensions import handoff_filters\n\nagent = Agent(name=\"FAQ agent\")\n\nhandoff_obj = handoff(\n    agent=agent,\n    input_filter=handoff_filters.remove_all_tools,\n)\n\n```\n",
-          "new_string": "from agents import Agent, handoff\nfrom agents.extensions import handoff_filters\n\nagent = Agent(name=\"FAQ agent\")\n\n# When invoking another agent, always use handoff.\nhandoff_obj = handoff(\n    agent=agent,\n    input_filter=handoff_filters.remove_all_tools,\n)\n\n```\n"
-        }
-      ],
-      "version": "8e83d392-da47-49eb-8bc8-27a1130e40c7"
-    },
-    {
-      "document_id": "7d59da6f-f949-4d78-92da-9a52b55087ab",
-      "changes": [
-        {
-          "old_string": "# 複数エージェントのオーケストレーション\n\nオーケストレーションとは、アプリ内でエージェントがどのように流れるかを指します。どのエージェントが、どの順序で実行され、その後どう決定するかを制御します。エージェントをオーケストレーションする主な方法は次の 2 つです。",
-          "new_string": "# 複数エージェントのオーケストレーション\n\n⚠️ 注意: エージェント間のオーケストレーションは handoff 機構のみサポートされます。as_tool メソッドによる和訳や他 agent 直接呼び出しは非推奨・非サポートとなりました。\n\nオーケストレーションとは、アプリ内でエージェントがどのように流れるかを指します。どのエージェントが、どの順序で実行され、その後どう決定するかを制御します。エージェントをオーケストレーションする主な方法は次の 2 つです。"
-        },
-        {
-          "old_string": "## LLM によるオーケストレーション\n\nエージェントとは、 instructions、ツール、ハンドオフを備えた LLM です。オープンエンドなタスクが与えられた場合、 LLM はタスクをどのように進めるかを自律的に計画し、ツールを使ってアクションやデータ取得を行い、ハンドオフでサブエージェントへタスクを委譲できます。たとえば、リサーチエージェントには次のようなツールを装備できます。\n\n- Web 検索でオンライン情報を取得する\n- ファイル検索で独自データや接続を調べる\n- コンピュータ操作でコンピュータ上のアクションを実行する\n- コード実行でデータ分析を行う\n- 計画立案やレポート作成などに長けた専門エージェントへのハンドオフ\n\nこのパターンはタスクがオープンエンドで、 LLM の知能に頼りたい場合に最適です。重要な戦術は次のとおりです。",
-          "new_string": "## LLM によるオーケストレーション\n\n『エージェント呼び出しは必ず handoff を通して行ってください。』\n\nエージェントとは、 instructions、ツール、ハンドオフを備えた LLM です。オープンエンドなタスクが与えられた場合、 LLM はタスクをどのように進めるかを自律的に計画し、ツールを使ってアクションやデータ取得を行い、ハンドオフでサブエージェントへタスクを委譲できます。たとえば、リサーチエージェントには次のようなツールを装備できます。\n\n- Web 検索でオンライン情報を取得する\n- ファイル検索で独自データや接続を調べる\n- コンピュータ操作でコンピュータ上のアクションを実行する\n- コード実行でデータ分析を行う\n- 計画立案やレポート作成などに長けた専門エージェントへのハンドオフ\n\nこのパターンはタスクがオープンエンドで、 LLM の知能に頼りたい場合に最適です。重要な戦術は次のとおりです。"
-        }
-      ],
-      "version": "b3e641d8-feea-426d-9475-bb78c80804b9"
-    }
-  ],
-  "create": [
-    {
-      "name": "depreciated-items",
-      "path": "depreciated-items/",
-      "title": "Depreciated Items",
-      "parent_id": null,
-      "is_api_ref": false,
-      "markdown_content_en": "# Depreciated Items in OpenAI Agents SDK\n\nThis page provides a list of features and items in the OpenAI Agents SDK that have been **depreciated** (no longer recommended for use and subject to removal in future releases). Please review this page regularly to ensure your implementation is following the latest recommended practices.\n\n## as_tool Agent Usage (Depreciated)\n\nPreviously, agents could be used with the `as_tool` functionality. **This is no longer supported.**\n\n- **Deprecated Feature**: Using agents as tools via `as_tool`.\n- **Migration Path**: If you need to invoke one agent from another, you should use the `handoff` mechanism.\n\n### Example of Deprecated Pattern\n```python\n# This pattern is no longer supported\nmy_agent = get_agent(...)\nother_agent = get_agent(...)\nresult = my_agent.as_tool(other_agent)\n```\n\n### Recommended Approach\nUse `handoff` to interact between agents:\n```python\nmy_agent = get_agent(...)\nother_agent = get_agent(...)\nresult = my_agent.handoff(other_agent, ...)\n```\n\nFor more on handing off work between agents, see the [Handoffs Guide](handoffs/).\n\n---\n\n## Why Items Are Depreciated\nItems and features may be depreciated due to:\n- Improved or safer alternatives\n- Security vulnerabilities\n- Architectural changes in the SDK\n\n## What to Do If You Are Using a Depreciated Item\n- Update your code as soon as possible to use supported patterns.\n- Reach out via the SDK community or support channels for migration help.",
-      "markdown_content_ja": "# OpenAI Agents SDK における非推奨項目\n\nこのページでは、OpenAI Agents SDK で**非推奨（depreciated）**となった機能・項目の一覧をまとめています。今後のバージョンで削除される可能性があるため、最新の推奨事項に従った実装を行うよう、定期的に本ページをご確認ください。\n\n## as_tool エージェント利用（非推奨）\n\n以前はエージェントを `as_tool` 機能で利用できましたが、**現在はサポートされていません。**\n\n- **非推奨機能**: `as_tool` を使ったエージェントのツール化\n- **移行方法**: 他のエージェントを呼び出す際は `handoff` 機構を利用してください。\n\n### 非推奨パターンの例\n```python\n# このパターンはサポートされていません\nmy_agent = get_agent(...)\nother_agent = get_agent(...)\nresult = my_agent.as_tool(other_agent)\n```\n\n### 推奨される方法\nエージェント間のやり取りには `handoff` を使います：\n```python\nmy_agent = get_agent(...)\nother_agent = get_agent(...)\nresult = my_agent.handoff(other_agent, ...)\n```\n\nエージェント間のハンドオフの詳細については[ハンドオフガイド](handoffs/)をご参照ください。\n\n---\n\n## なぜ非推奨となるのか\n以下の理由などにより項目が非推奨になることがあります：\n- より良い、または安全な代替手段の登場\n- セキュリティ上の脆弱性\n- SDK のアーキテクチャ変更\n\n## 非推奨項目を利用している場合\n- できるだけ早くサポートされている方法にコードを更新してください。\n- 移行サポートが必要な場合はコミュニティやサポート窓口までご連絡ください。"
-    }
-  ],
-  "delete": [
-    {
-      "document_id": "4152bef4-1b77-4213-92bb-0f3bf94916f0",
-      "title": "Handoffs - OpenAI Agents SDK",
-      "path": "handoffs/",
-      "version": "b7eedc4e-d7f5-4565-9f7c-61e1b5e5ea08"
-    },
-    {
-      "document_id": "d3de75f1-cb21-4008-8ab5-87631f1463bd",
-      "title": "Handoffs - OpenAI Agents SDK",
-      "path": "handoffs/",
-      "version": "e48fd93c-f4d8-4192-a887-8a3996b8bff8"
-    },
-    {
-      "document_id": "1dd6408d-5d8f-4a13-b34f-08b02cbbfa3d",
-      "title": "ハンドオフ - OpenAI Agents SDK",
-      "path": "handoffs/",
-      "version": "1766cf1f-136c-46be-8b0f-f352ed829ae7"
-    },
-    {
-      "document_id": "d123c732-7f44-4cf0-aafb-13c5bb160bc6",
-      "title": "Handoffs - OpenAI Agents SDK",
-      "path": "handoffs/",
-      "version": "8e83d392-da47-49eb-8bc8-27a1130e40c7"
-    },
-    {
-      "document_id": "72935889-8865-43ff-9146-61c6959eb4cc",
-      "title": "Handoff prompt - OpenAI Agents SDK",
-      "path": "extensions/handoff_prompt/",
-      "version": "d80cffc8-1b69-4e15-beb6-acd1b6155ac1"
-    },
-    {
-      "document_id": "cf812a85-87b6-45ef-902b-0df222fea272",
-      "title": "Handoff prompt - OpenAI Agents SDK",
-      "path": "extensions/handoff_prompt/",
-      "version": "ffefe82d-8ccf-4654-b3b1-54844ce3fcd1"
-    },
-    {
-      "document_id": "75639e08-1e2a-45d3-8bb7-b6587eaa9413",
-      "title": "Handoff filters - OpenAI Agents SDK",
-      "path": "extensions/handoff_filters/",
-      "version": "596abcdc-7a6b-486f-8f25-e42de9dec90e"
-    },
-    {
-      "document_id": "11b7419e-4ff2-4f5d-bea2-9c3a6253817d",
-      "title": "Handoff filters - OpenAI Agents SDK",
-      "path": "extensions/handoff_filters/",
-      "version": "73628cd3-d344-4eb0-b24f-061aff6f8235"
-    }
-  ]
-}
+//       const data: EditDocumentationResponse = {
+//   "edit": [
+//     {
+//       "document_id": "a1d44224-d450-4278-861e-50878445f82b",
+//       "changes": [
+//         {
+//           "old_string": "# Agents\n\nAgents are the core building block in your apps. An agent is a large language model (LLM), configured with instructions and tools.\n",
+//           "new_string": "# Agents\n\n> ⚠️ **Important:** Using agents as tools (via `as_tool`) is deprecated and no longer supported. Agents may only be coordinated or invoked using handoff.\n\nAgents are the core building block in your apps. An agent is a large language model (LLM), configured with instructions and tools.\n"
+//         },
+//         {
+//           "old_string": "- `tools`: Tools that the agent can use to achieve its tasks.\n\n```md-code__content\nfrom agents import Agent, ModelSettings, function_tool\n\n@function_tool\ndef get_weather(city: str) -> str:\n    return f\"The weather in {city} is sunny\"\n\nagent = Agent(\n    name=\"Haiku agent\",\n    instructions=\"Always respond in haiku form\",\n    model=\"o3-mini\",\n    tools=[get_weather],\n)\n\n```\n",
+//           "new_string": "- `tools`: Tools that the agent can use to achieve its tasks.\n\n**Note:** Agents can no longer be used as tools via `as_tool`. To invoke other agents, you must use the handoff mechanism.\n\n```md-code__content\nfrom agents import Agent, ModelSettings, function_tool\n\n@function_tool\ndef get_weather(city: str) -> str:\n    return f\"The weather in {city} is sunny\"\n\nagent = Agent(\n    name=\"Haiku agent\",\n    instructions=\"Always respond in haiku form\",\n    model=\"o3-mini\",\n    tools=[get_weather],\n)\n\n```\n"
+//         },
+//         {
+//           "old_string": "## Handoffs\n\nHandoffs are sub-agents that the agent can delegate to. You provide a list of handoffs, and the agent can choose to delegate to them if relevant. This is a powerful pattern that allows orchestrating modular, specialized agents that excel at a single task. Read more in the [handoffs](https://openai.github.io/openai-agents-python/handoffs/) documentation.\n\n```md-code__content\nfrom agents import Agent\n\nbooking_agent = Agent(...)\nrefund_agent = Agent(...)\n\ntriage_agent = Agent(\n    name=\"Triage agent\",\n    instructions=(\n        \"Help the user with their questions.\"\n        \"If they ask about booking, handoff to the booking agent.\"\n        \"If they ask about refunds, handoff to the refund agent.\"\n    ),\n    handoffs=[booking_agent, refund_agent],\n)\n\n```\n",
+//           "new_string": "## Handoffs\n\nHandoffs are sub-agents that the agent can delegate to. You provide a list of handoffs, and the agent can choose to delegate to them if relevant. This is a powerful pattern that allows orchestrating modular, specialized agents that excel at a single task. **To invoke other agents, you must use the handoff mechanism.** Read more in the [handoffs](https://openai.github.io/openai-agents-python/handoffs/) documentation.\n\n```md-code__content\nfrom agents import Agent\n\nbooking_agent = Agent(...)\nrefund_agent = Agent(...)\n\ntriage_agent = Agent(\n    name=\"Triage agent\",\n    instructions=(\n        \"Help the user with their questions.\"\n        \"If they ask about booking, handoff to the booking agent.\"\n        \"If they ask about refunds, handoff to the refund agent.\"\n    ),\n    handoffs=[booking_agent, refund_agent],\n)\n\n```\n"
+//         }
+//       ],
+//       "version": "39c34059-97d3-488f-ab79-eca7dbd5fba4"
+//     },
+//     {
+//       "document_id": "e76358db-8837-4715-9488-a139bf680536",
+//       "changes": [
+//         {
+//           "old_string": "## ツールとしてのエージェント\n\n一部のワークフローでは、ハンドオフせずに中央のエージェントが複数の専門エージェントをオーケストレーションしたい場合があります。そのような場合、エージェントをツールとしてモデル化できます。\n\n```md-code__content\nfrom agents import Agent, Runner\nimport asyncio\n\nspanish_agent = Agent(\n    name=\"Spanish agent\",\n    instructions=\"You translate the user's message to Spanish\",\n)\n\nfrench_agent = Agent(\n    name=\"French agent\",\n    instructions=\"You translate the user's message to French\",\n)\n\norchestrator_agent = Agent(\n    name=\"orchestrator_agent\",\n    instructions=(\n        \"You are a translation agent. You use the tools given to you to translate.\"\n        \"If asked for multiple translations, you call the relevant tools.\"\n    ),\n    tools=[\\\n        spanish_agent.as_tool(\\\n            tool_name=\"translate_to_spanish\",\\\n            tool_description=\"Translate the user's message to Spanish\",\\\n        ),\\\n        french_agent.as_tool(\\\n            tool_name=\"translate_to_french\",\\\n            tool_description=\"Translate the user's message to French\",\\\n        ),\\\n    ],\n)\n\nasync def main():\n    result = await Runner.run(orchestrator_agent, input=\"Say 'Hello, how are you?' in Spanish.\")\n    print(result.final_output)\n\n```\n\n### ツールエージェントのカスタマイズ\n\n`agent.as_tool` 関数はエージェントを簡単にツール化するためのヘルパーです。ただし、すべての設定に対応しているわけではありません（例: `max_turns` は設定不可）。高度なユースケースでは、ツール実装内で `Runner.run` を直接使用してください。\n\n```md-code__content\n@function_tool\nasync def run_my_agent() -> str:\n  \"\"\"A tool that runs the agent with custom configs\".\n\n    agent = Agent(name=\"My agent\", instructions=\"...\")\n\n    result = await Runner.run(\n        agent,\n        input=\"...\",\n        max_turns=5,\n        run_config=...\n    )\n\n    return str(result.final_output)\n\n```\n",
+//           "new_string": "## エージェントの as_tool メソッドによるツール化は廃止されました。今後は handoff による間接呼び出しのみサポートされます。\n\n以前存在していた「ツールとしてのエージェント（agent.as_tool）」に関する説明・コード例・推奨文は廃止されました。\n\n他エージェントを呼び出す場合には handoff を利用してください。\n"
+//         }
+//       ],
+//       "version": "05514707-3bc2-4298-a4c9-129a303ae2a2"
+//     },
+//     {
+//       "document_id": "d123c732-7f44-4cf0-aafb-13c5bb160bc6",
+//       "changes": [
+//         {
+//           "old_string": "[Skip to content](https://openai.github.io/openai-agents-python/handoffs/#handoffs)\n\n# Handoffs\n\nHandoffs allow an agent to delegate tasks to another agent. This is particularly useful in scenarios where different agents specialize in distinct areas. For example, a customer support app might have agents that each specifically handle tasks like order status, refunds, FAQs, etc.\n",
+//           "new_string": "[Skip to content](https://openai.github.io/openai-agents-python/handoffs/#handoffs)\n\n> ⚠️ **Agents can only be invoked using the handoff mechanism. The use of agents as tools (`as_tool`) is no longer supported.**\n\n# Handoffs\n\nHandoffs allow an agent to delegate tasks to another agent. This is particularly useful in scenarios where different agents specialize in distinct areas. For example, a customer support app might have agents that each specifically handle tasks like order status, refunds, FAQs, etc.\n"
+//         },
+//         {
+//           "old_string": "Handoffs are represented as tools to the LLM. So if there's a handoff to an agent named `Refund Agent`, the tool would be called `transfer_to_refund_agent`.\n\n## Creating a handoff\n\nAll agents have a [`handoffs`](https://openai.github.io/openai-agents-python/ref/agent/#agents.agent.Agent.handoffs \"handoffs            class-attribute       instance-attribute   \") param, which can either take an `Agent` directly, or a `Handoff` object that customizes the Handoff.\n\nYou can create a handoff using the [`handoff()`](https://openai.github.io/openai-agents-python/ref/handoffs/#agents.handoffs.handoff \"handoff\") function provided by the Agents SDK. This function allows you to specify the agent to hand off to, along with optional overrides and input filters.\n\n### Basic Usage\n",
+//           "new_string": "Handoffs are represented as tools to the LLM. So if there's a handoff to an agent named `Refund Agent`, the tool would be called `transfer_to_refund_agent`.\n\n**When invoking another agent, always use handoff.**\n\n## Creating a handoff\n\nAll agents have a [`handoffs`](https://openai.github.io/openai-agents-python/ref/agent/#agents.agent.Agent.handoffs \"handoffs            class-attribute       instance-attribute   \") param, which can either take an `Agent` directly, or a `Handoff` object that customizes the Handoff.\n\nYou can create a handoff using the [`handoff()`](https://openai.github.io/openai-agents-python/ref/handoffs/#agents.handoffs.handoff \"handoff\") function provided by the Agents SDK. This function allows you to specify the agent to hand off to, along with optional overrides and input filters.\n\n### Basic Usage\n"
+//         },
+//         {
+//           "old_string": "from agents import Agent, handoff\n\nbilling_agent = Agent(name=\"Billing agent\")\nrefund_agent = Agent(name=\"Refund agent\")\n\ntriage_agent = Agent(name=\"Triage agent\", handoffs=[billing_agent, handoff(refund_agent)])\n\n```\n\n### Customizing handoffs via the `handoff()` function\n",
+//           "new_string": "from agents import Agent, handoff\n\nbilling_agent = Agent(name=\"Billing agent\")\nrefund_agent = Agent(name=\"Refund agent\")\n\n# When invoking another agent, always use handoff.\ntriage_agent = Agent(name=\"Triage agent\", handoffs=[billing_agent, handoff(refund_agent)])\n\n```\n\n### Customizing handoffs via the `handoff()` function\n"
+//         },
+//         {
+//           "old_string": "from agents import Agent, handoff, RunContextWrapper\n\ndef on_handoff(ctx: RunContextWrapper[None]):\n    print(\"Handoff called\")\n\nagent = Agent(name=\"My agent\")\n\nhandoff_obj = handoff(\n    agent=agent,\n    on_handoff=on_handoff,\n    tool_name_override=\"custom_handoff_tool\",\n    tool_description_override=\"Custom description\",\n)\n\n```\n",
+//           "new_string": "from agents import Agent, handoff, RunContextWrapper\n\ndef on_handoff(ctx: RunContextWrapper[None]):\n    print(\"Handoff called\")\n\nagent = Agent(name=\"My agent\")\n\n# When invoking another agent, always use handoff.\nhandoff_obj = handoff(\n    agent=agent,\n    on_handoff=on_handoff,\n    tool_name_override=\"custom_handoff_tool\",\n    tool_description_override=\"Custom description\",\n)\n\n```\n"
+//         },
+//         {
+//           "old_string": "from pydantic import BaseModel\n\nfrom agents import Agent, handoff, RunContextWrapper\n\nclass EscalationData(BaseModel):\n    reason: str\n\nasync def on_handoff(ctx: RunContextWrapper[None], input_data: EscalationData):\n    print(f\"Escalation agent called with reason: {input_data.reason}\")\n\nagent = Agent(name=\"Escalation agent\")\n\nhandoff_obj = handoff(\n    agent=agent,\n    on_handoff=on_handoff,\n    input_type=EscalationData,\n)\n\n```\n",
+//           "new_string": "from pydantic import BaseModel\n\nfrom agents import Agent, handoff, RunContextWrapper\n\nclass EscalationData(BaseModel):\n    reason: str\n\nasync def on_handoff(ctx: RunContextWrapper[None], input_data: EscalationData):\n    print(f\"Escalation agent called with reason: {input_data.reason}\")\n\nagent = Agent(name=\"Escalation agent\")\n\n# When invoking another agent, always use handoff.\nhandoff_obj = handoff(\n    agent=agent,\n    on_handoff=on_handoff,\n    input_type=EscalationData,\n)\n\n```\n"
+//         },
+//         {
+//           "old_string": "from agents import Agent, handoff\nfrom agents.extensions import handoff_filters\n\nagent = Agent(name=\"FAQ agent\")\n\nhandoff_obj = handoff(\n    agent=agent,\n    input_filter=handoff_filters.remove_all_tools,\n)\n\n```\n",
+//           "new_string": "from agents import Agent, handoff\nfrom agents.extensions import handoff_filters\n\nagent = Agent(name=\"FAQ agent\")\n\n# When invoking another agent, always use handoff.\nhandoff_obj = handoff(\n    agent=agent,\n    input_filter=handoff_filters.remove_all_tools,\n)\n\n```\n"
+//         }
+//       ],
+//       "version": "8e83d392-da47-49eb-8bc8-27a1130e40c7"
+//     },
+//     {
+//       "document_id": "7d59da6f-f949-4d78-92da-9a52b55087ab",
+//       "changes": [
+//         {
+//           "old_string": "# 複数エージェントのオーケストレーション\n\nオーケストレーションとは、アプリ内でエージェントがどのように流れるかを指します。どのエージェントが、どの順序で実行され、その後どう決定するかを制御します。エージェントをオーケストレーションする主な方法は次の 2 つです。",
+//           "new_string": "# 複数エージェントのオーケストレーション\n\n⚠️ 注意: エージェント間のオーケストレーションは handoff 機構のみサポートされます。as_tool メソッドによる和訳や他 agent 直接呼び出しは非推奨・非サポートとなりました。\n\nオーケストレーションとは、アプリ内でエージェントがどのように流れるかを指します。どのエージェントが、どの順序で実行され、その後どう決定するかを制御します。エージェントをオーケストレーションする主な方法は次の 2 つです。"
+//         },
+//         {
+//           "old_string": "## LLM によるオーケストレーション\n\nエージェントとは、 instructions、ツール、ハンドオフを備えた LLM です。オープンエンドなタスクが与えられた場合、 LLM はタスクをどのように進めるかを自律的に計画し、ツールを使ってアクションやデータ取得を行い、ハンドオフでサブエージェントへタスクを委譲できます。たとえば、リサーチエージェントには次のようなツールを装備できます。\n\n- Web 検索でオンライン情報を取得する\n- ファイル検索で独自データや接続を調べる\n- コンピュータ操作でコンピュータ上のアクションを実行する\n- コード実行でデータ分析を行う\n- 計画立案やレポート作成などに長けた専門エージェントへのハンドオフ\n\nこのパターンはタスクがオープンエンドで、 LLM の知能に頼りたい場合に最適です。重要な戦術は次のとおりです。",
+//           "new_string": "## LLM によるオーケストレーション\n\n『エージェント呼び出しは必ず handoff を通して行ってください。』\n\nエージェントとは、 instructions、ツール、ハンドオフを備えた LLM です。オープンエンドなタスクが与えられた場合、 LLM はタスクをどのように進めるかを自律的に計画し、ツールを使ってアクションやデータ取得を行い、ハンドオフでサブエージェントへタスクを委譲できます。たとえば、リサーチエージェントには次のようなツールを装備できます。\n\n- Web 検索でオンライン情報を取得する\n- ファイル検索で独自データや接続を調べる\n- コンピュータ操作でコンピュータ上のアクションを実行する\n- コード実行でデータ分析を行う\n- 計画立案やレポート作成などに長けた専門エージェントへのハンドオフ\n\nこのパターンはタスクがオープンエンドで、 LLM の知能に頼りたい場合に最適です。重要な戦術は次のとおりです。"
+//         }
+//       ],
+//       "version": "b3e641d8-feea-426d-9475-bb78c80804b9"
+//     }
+//   ],
+//   "create": [
+//     {
+//       "name": "depreciated-items",
+//       "path": "depreciated-items/",
+//       "title": "Depreciated Items",
+//       "parent_id": null,
+//       "is_api_ref": false,
+//       "markdown_content_en": "# Depreciated Items in OpenAI Agents SDK\n\nThis page provides a list of features and items in the OpenAI Agents SDK that have been **depreciated** (no longer recommended for use and subject to removal in future releases). Please review this page regularly to ensure your implementation is following the latest recommended practices.\n\n## as_tool Agent Usage (Depreciated)\n\nPreviously, agents could be used with the `as_tool` functionality. **This is no longer supported.**\n\n- **Deprecated Feature**: Using agents as tools via `as_tool`.\n- **Migration Path**: If you need to invoke one agent from another, you should use the `handoff` mechanism.\n\n### Example of Deprecated Pattern\n```python\n# This pattern is no longer supported\nmy_agent = get_agent(...)\nother_agent = get_agent(...)\nresult = my_agent.as_tool(other_agent)\n```\n\n### Recommended Approach\nUse `handoff` to interact between agents:\n```python\nmy_agent = get_agent(...)\nother_agent = get_agent(...)\nresult = my_agent.handoff(other_agent, ...)\n```\n\nFor more on handing off work between agents, see the [Handoffs Guide](handoffs/).\n\n---\n\n## Why Items Are Depreciated\nItems and features may be depreciated due to:\n- Improved or safer alternatives\n- Security vulnerabilities\n- Architectural changes in the SDK\n\n## What to Do If You Are Using a Depreciated Item\n- Update your code as soon as possible to use supported patterns.\n- Reach out via the SDK community or support channels for migration help.",
+//       "markdown_content_ja": "# OpenAI Agents SDK における非推奨項目\n\nこのページでは、OpenAI Agents SDK で**非推奨（depreciated）**となった機能・項目の一覧をまとめています。今後のバージョンで削除される可能性があるため、最新の推奨事項に従った実装を行うよう、定期的に本ページをご確認ください。\n\n## as_tool エージェント利用（非推奨）\n\n以前はエージェントを `as_tool` 機能で利用できましたが、**現在はサポートされていません。**\n\n- **非推奨機能**: `as_tool` を使ったエージェントのツール化\n- **移行方法**: 他のエージェントを呼び出す際は `handoff` 機構を利用してください。\n\n### 非推奨パターンの例\n```python\n# このパターンはサポートされていません\nmy_agent = get_agent(...)\nother_agent = get_agent(...)\nresult = my_agent.as_tool(other_agent)\n```\n\n### 推奨される方法\nエージェント間のやり取りには `handoff` を使います：\n```python\nmy_agent = get_agent(...)\nother_agent = get_agent(...)\nresult = my_agent.handoff(other_agent, ...)\n```\n\nエージェント間のハンドオフの詳細については[ハンドオフガイド](handoffs/)をご参照ください。\n\n---\n\n## なぜ非推奨となるのか\n以下の理由などにより項目が非推奨になることがあります：\n- より良い、または安全な代替手段の登場\n- セキュリティ上の脆弱性\n- SDK のアーキテクチャ変更\n\n## 非推奨項目を利用している場合\n- できるだけ早くサポートされている方法にコードを更新してください。\n- 移行サポートが必要な場合はコミュニティやサポート窓口までご連絡ください。"
+//     }
+//   ],
+//   "delete": [
+//     {
+//       "document_id": "4152bef4-1b77-4213-92bb-0f3bf94916f0",
+//       "title": "Handoffs - OpenAI Agents SDK",
+//       "path": "handoffs/",
+//       "version": "b7eedc4e-d7f5-4565-9f7c-61e1b5e5ea08"
+//     },
+//     {
+//       "document_id": "d3de75f1-cb21-4008-8ab5-87631f1463bd",
+//       "title": "Handoffs - OpenAI Agents SDK",
+//       "path": "handoffs/",
+//       "version": "e48fd93c-f4d8-4192-a887-8a3996b8bff8"
+//     },
+//     {
+//       "document_id": "1dd6408d-5d8f-4a13-b34f-08b02cbbfa3d",
+//       "title": "ハンドオフ - OpenAI Agents SDK",
+//       "path": "handoffs/",
+//       "version": "1766cf1f-136c-46be-8b0f-f352ed829ae7"
+//     },
+//     {
+//       "document_id": "d123c732-7f44-4cf0-aafb-13c5bb160bc6",
+//       "title": "Handoffs - OpenAI Agents SDK",
+//       "path": "handoffs/",
+//       "version": "8e83d392-da47-49eb-8bc8-27a1130e40c7"
+//     },
+//     {
+//       "document_id": "72935889-8865-43ff-9146-61c6959eb4cc",
+//       "title": "Handoff prompt - OpenAI Agents SDK",
+//       "path": "extensions/handoff_prompt/",
+//       "version": "d80cffc8-1b69-4e15-beb6-acd1b6155ac1"
+//     },
+//     {
+//       "document_id": "cf812a85-87b6-45ef-902b-0df222fea272",
+//       "title": "Handoff prompt - OpenAI Agents SDK",
+//       "path": "extensions/handoff_prompt/",
+//       "version": "ffefe82d-8ccf-4654-b3b1-54844ce3fcd1"
+//     },
+//     {
+//       "document_id": "75639e08-1e2a-45d3-8bb7-b6587eaa9413",
+//       "title": "Handoff filters - OpenAI Agents SDK",
+//       "path": "extensions/handoff_filters/",
+//       "version": "596abcdc-7a6b-486f-8f25-e42de9dec90e"
+//     },
+//     {
+//       "document_id": "11b7419e-4ff2-4f5d-bea2-9c3a6253817d",
+//       "title": "Handoff filters - OpenAI Agents SDK",
+//       "path": "extensions/handoff_filters/",
+//       "version": "73628cd3-d344-4eb0-b24f-061aff6f8235"
+//     }
+//   ]
+// }
       setResponse(data);
       
       // Fetch original content for edit changes
@@ -944,13 +945,14 @@ export default function DocumentationChangePage() {
           </div>
         )}
         
-        <textarea
-          className="w-full p-3 sm:p-4 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 mb-4 text-sm sm:text-base"
-          rows={4}
-          placeholder="Describe what changed or what needs to be updated..."
+        <DocumentMentionInput
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={setQuery}
           disabled={loading}
+          placeholder="Describe what changed or what needs to be updated... (Type @ to mention documents)"
+          rows={4}
+          className="mb-4"
+          onSubmit={handleSubmit}
         />
         
         <Button 

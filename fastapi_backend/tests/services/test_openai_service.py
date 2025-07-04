@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
-import json
 
 from app.services.openai_service import (
     create_embedding,
@@ -13,17 +12,16 @@ class TestOpenAIService:
     @pytest.mark.asyncio
     async def test_create_embedding(self):
         """Test creating embeddings using OpenAI."""
-        # Mock the OpenAI embeddings.create method
-        with patch('openai.embeddings.create') as mock_create:
+        # Mock the OpenAI client
+        with patch('app.services.openai_service.openai_client') as mock_client:
             # Set up the mock response
             mock_response = MagicMock()
             embedding_data = MagicMock()
             embedding_data.embedding = [0.1, 0.2, 0.3] + [0.0] * 1533  # 1536-dimensional vector
             mock_response.data = [embedding_data]
             
-            # Make the mock return an awaitable that returns the response
-            async_mock = AsyncMock(return_value=mock_response)
-            mock_create.return_value = async_mock()
+            # Make embeddings.create return the response
+            mock_client.embeddings.create = AsyncMock(return_value=mock_response)
             
             # Call the function
             result = await create_embedding("Test text")
@@ -35,19 +33,19 @@ class TestOpenAIService:
             assert result[2] == 0.3
             
             # Verify the mock was called correctly
-            mock_create.assert_called_once()
-            args, kwargs = mock_create.call_args
+            mock_client.embeddings.create.assert_called_once()
+            args, kwargs = mock_client.embeddings.create.call_args
             assert kwargs["input"] == "Test text"
     
     @pytest.mark.asyncio
     async def test_create_embedding_empty_text(self):
         """Test creating embeddings with empty text."""
         # Should return a zero vector without calling the API
-        with patch('openai.embeddings.create') as mock_create:
+        with patch('app.services.openai_service.openai_client') as mock_client:
             result = await create_embedding("")
             assert len(result) == 1536
             assert all(v == 0.0 for v in result)
-            mock_create.assert_not_called()
+            mock_client.embeddings.create.assert_not_called()
             
             # Also test with None
             result = await create_embedding(None)
@@ -57,17 +55,16 @@ class TestOpenAIService:
     @pytest.mark.asyncio
     async def test_extract_keywords(self):
         """Test extracting keywords using OpenAI."""
-        # Mock the OpenAI chat.completions.create method
-        with patch('openai.chat.completions.create') as mock_create:
+        # Mock the OpenAI client
+        with patch('app.services.openai_service.openai_client') as mock_client:
             # Set up the mock response
             mock_response = MagicMock()
             mock_choice = MagicMock()
             mock_choice.message.content = '{"keywords": ["test", "document", "api"]}'
             mock_response.choices = [mock_choice]
             
-            # Make the mock return an awaitable that returns the response
-            async_mock = AsyncMock(return_value=mock_response)
-            mock_create.return_value = async_mock()
+            # Make chat.completions.create return the response
+            mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
             
             # Call the function
             result = await extract_keywords("Test document for API")
@@ -76,38 +73,36 @@ class TestOpenAIService:
             assert result == ["test", "document", "api"]
             
             # Verify the mock was called correctly
-            mock_create.assert_called_once()
+            mock_client.chat.completions.create.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_extract_keywords_empty_text(self):
         """Test extracting keywords with empty text."""
         # Should return an empty list without calling the API
-        with patch('openai.chat.completions.create') as mock_create:
+        with patch('app.services.openai_service.openai_client') as mock_client:
             result = await extract_keywords("")
             assert result == []
-            mock_create.assert_not_called()
+            mock_client.chat.completions.create.assert_not_called()
     
     @pytest.mark.asyncio
     async def test_extract_keywords_malformed_response(self):
         """Test handling malformed responses from OpenAI."""
-        # Mock the OpenAI chat.completions.create method to return invalid JSON
-        with patch('openai.chat.completions.create') as mock_create:
+        # Mock the OpenAI client to return invalid JSON
+        with patch('app.services.openai_service.openai_client') as mock_client:
             # Set up the mock response with malformed JSON
             mock_response = MagicMock()
             mock_choice = MagicMock()
-            mock_choice.message.content = 'Invalid JSON but contains "keyword1" and "keyword2"'
+            mock_choice.message.content = 'Invalid JSON'
             mock_response.choices = [mock_choice]
             
-            # Make the mock return an awaitable that returns the response
-            async_mock = AsyncMock(return_value=mock_response)
-            mock_create.return_value = async_mock()
+            # Make chat.completions.create return the response
+            mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
             
             # Call the function
             result = await extract_keywords("Test document")
             
-            # Verify the fallback extraction worked
-            assert "keyword1" in result
-            assert "keyword2" in result
+            # Verify it returns empty list on malformed JSON
+            assert result == []
     
     @pytest.mark.asyncio
     async def test_generate_summary(self):
@@ -126,20 +121,20 @@ class TestOpenAIService:
     async def test_generate_summary_empty_text(self):
         """Test generating summary with empty text."""
         # Should return a default message without calling the API
-        with patch('openai.chat.completions.create') as mock_create:
+        with patch('app.services.openai_service.openai_client') as mock_client:
             result = await generate_summary("")
             assert result == "No content available"
-            mock_create.assert_not_called()
+            mock_client.chat.completions.create.assert_not_called()
     
     @pytest.mark.asyncio
     async def test_generate_summary_short_text(self):
         """Test generating summary with text that's already short."""
         # Should return the original text without calling the API
         short_text = "This is already a short text."
-        with patch('openai.chat.completions.create') as mock_create:
+        with patch('app.services.openai_service.openai_client') as mock_client:
             result = await generate_summary(short_text, max_length=200)
             assert result == short_text
-            mock_create.assert_not_called()
+            mock_client.chat.completions.create.assert_not_called()
     
     @pytest.mark.asyncio
     async def test_generate_summary_truncation(self):

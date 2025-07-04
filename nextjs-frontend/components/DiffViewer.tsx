@@ -25,7 +25,7 @@ export function DiffViewer({
   className,
   enableMarkdown = true,
 }: DiffViewerProps) {
-  const [renderMode, setRenderMode] = useState<"raw" | "markdown">("markdown");
+  const [renderMode, setRenderMode] = useState<"raw" | "markdown">("raw");
   const differences = diffLines(oldContent, newContent, { ignoreWhitespace: false });
 
   const showMarkdownToggle = enableMarkdown && (oldContent.includes('#') || newContent.includes('#') || oldContent.includes('```') || newContent.includes('```'));

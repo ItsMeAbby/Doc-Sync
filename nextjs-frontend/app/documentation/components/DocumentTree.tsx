@@ -49,21 +49,21 @@ const DocumentTreeNode: React.FC<{
   return (
     <div className="select-none">
       <div 
-        className={`flex items-center py-1.5 sm:py-1 px-2 rounded-md text-sm sm:text-base ${
+        className={`flex items-center py-2 sm:py-1.5 px-2 rounded-md text-xs sm:text-sm ${
           hasChildren 
             ? 'cursor-default' 
             : 'cursor-pointer ' + (isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')
         }`}
-        style={{ paddingLeft: `${level * 12 + 4}px` }}
+        style={{ paddingLeft: `${level * 8 + 4}px` }}
         onClick={hasChildren ? handleToggle : handleSelect}
       >
         {hasChildren ? (
-          <span className="mr-1 cursor-pointer" onClick={handleToggle}>
-            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          <span className="mr-1.5 sm:mr-1 cursor-pointer" onClick={handleToggle}>
+            {isExpanded ? <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />}
           </span>
         ) : (
-          <span className="mr-1">
-            <File className="h-4 w-4" />
+          <span className="mr-1.5 sm:mr-1">
+            <File className="h-3 w-3 sm:h-4 sm:w-4" />
           </span>
         )}
         {hasChildren ? (
@@ -98,12 +98,12 @@ const DocumentTree: React.FC<DocumentTreeProps> = ({ documents, onSelectDocument
     <div className="flex flex-col h-full">
       <div className="relative mb-3 sticky top-0 z-10 bg-background">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="h-4 w-4 text-gray-400" />
+          <Search className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
         </div>
         <input
           type="text"
-          placeholder="Search documentation..."
-          className="pl-10 pr-4 py-2 w-full text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          placeholder="Search documents..."
+          className="pl-10 pr-4 py-2 w-full text-xs sm:text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -124,16 +124,30 @@ const DocumentTree: React.FC<DocumentTreeProps> = ({ documents, onSelectDocument
             <Skeleton className="h-6 w-10/12 ml-4" />
           </div>
         ) : documents.length > 0 ? (
-          documents.map((doc) => (
-            <DocumentTreeNode
-              key={doc.id}
-              document={doc}
-              onSelectDocument={onSelectDocument}
-              selectedDocument={selectedDocument}
-              level={0}
-              searchTerm={searchTerm}
-            />
-          ))
+          documents
+            .sort((a, b) => {
+              // Sort by: children first (files), then parents (folders) at bottom
+              const aHasChildren = a.children && a.children.length > 0;
+              const bHasChildren = b.children && b.children.length > 0;
+              
+              if (aHasChildren && !bHasChildren) return 1; // a is folder, b is file -> a goes after b
+              if (!aHasChildren && bHasChildren) return -1; // a is file, b is folder -> a goes before b
+              
+              // If both are same type, sort alphabetically
+              const aName = a.name || a.title || '';
+              const bName = b.name || b.title || '';
+              return aName.localeCompare(bName);
+            })
+            .map((doc) => (
+              <DocumentTreeNode
+                key={doc.id}
+                document={doc}
+                onSelectDocument={onSelectDocument}
+                selectedDocument={selectedDocument}
+                level={0}
+                searchTerm={searchTerm}
+              />
+            ))
         ) : (
           <div className="p-2 text-gray-500">No documents available</div>
         )}

@@ -1,6 +1,7 @@
-from typing import Set, List
+from typing import Set, List, Union
 import json
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 
@@ -25,7 +26,23 @@ class Settings(BaseSettings):
     
     # DocSync settings
     VECTOR_DIMENSION: int = 1536
-    LANGUAGES: List[str] = ["en"]
+    LANGUAGES: Union[List[str], str] = ["en"]
+    
+    @field_validator('LANGUAGES', mode='before')
+    @classmethod
+    def validate_languages(cls, v):
+        """Validate and parse LANGUAGES field"""
+        if isinstance(v, str):
+            if not v:  # Empty string
+                return ["en"]
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+                return ["en"]
+            except json.JSONDecodeError:
+                return ["en"]
+        return v
     
     @property
     def languages_list(self) -> List[str]:

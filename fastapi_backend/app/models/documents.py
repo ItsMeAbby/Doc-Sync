@@ -32,6 +32,7 @@ class DocumentUpdate(BaseModel):
     is_api_ref: Optional[bool] = None
     is_deleted: Optional[bool] = None
     parent_id: Optional[str] = None
+    current_version_id: Optional[str] = None  # Optional for updates, can be used to set the current version
 
 
 class DocumentContentBase(BaseModel):
@@ -55,6 +56,7 @@ class DocumentContentRead(DocumentContentBase):
     name: Optional[str] = None  
     path: Optional[str] = None  
     title: Optional[str] = None
+    latest: Optional[bool] = None  # Flag to indicate if this is the current/latest version
 
 
 

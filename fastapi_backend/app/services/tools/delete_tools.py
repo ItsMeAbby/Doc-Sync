@@ -7,7 +7,7 @@ from app.supabase import supabase
 import asyncio
 from agents import function_tool
 from app.config import settings
-from app.services.tools.edit_suggesstion_tools import Document, get_all_document_summaries
+from app.services.tools.edit_suggesstion_tools import Document
 
 class GetDocumentsForDeletionConfiguration(BaseModel):
     """Configuration for analyzing documents for deletion."""

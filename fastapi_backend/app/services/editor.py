@@ -3,6 +3,7 @@ from app.services.agents.editor_agent import DocumentEdit, edit_content_agent, E
 from app.services.agents.intent_detection_agent import Detected_Intent, intent_agent
 from app.services.agents.delete_content_agent import delete_content_agent, DocumentToDelete,DeleteContentResponse
 from app.services.agents.create_content_agent import CreateContentResponse, GeneratedDocument, create_content_agent
+from app.services.shared.models import ApiRef
 from agents import Runner,set_default_openai_key,set_tracing_disabled
 from app.config import settings
 import json
@@ -10,32 +11,54 @@ import asyncio
 
 from app.models.edit_documentation import DocumentEditWithOriginal, EditDocumentationResponse, ChangeRequest
 class MainEditor:
-    def __init__(self, query: str):
+    def __init__(self, query: str, document_id: str = None):
         self.query = query
+        self.document_id : str = document_id  # Initialize document_id to None, can be set later if needed
         self.edit_changes: list[DocumentEdit] = []
         self.create_documents: list[GeneratedDocument] = []
         self.delete_documents : list[DocumentToDelete] = []
 
-    async def run(self) -> EditDocumentationResponse:
+    async def run(self) -> "EditDocumentationResponse":
         """
-        Run the agent to get the response based on the query.
+        Detect user intents and dispatch the appropriate action handlers **concurrently**.
+        All detected intents are scheduled as asyncio tasks so that edit, create, and delete
+        operations run in parallel whenever possible.
+
+        Returns
+        -------
+        EditDocumentationResponse
+            Aggregated results from all handler tasks.
         """
         detected_intents = await self._detect_intent()
-        
+
+        # Map intent names to their corresponding handler coroutine factories.
+        intent_handlers = {
+            "edit": self._handle_edit_intent,
+            "create": self._handle_create_intent,
+            "delete": self._handle_delete_intent,
+        }
+
+        # Collect tasks for every detected intent.
+        tasks: list[asyncio.Task] = []
         for intent in detected_intents.intents:
             print(f"Detected intent: {intent.intent} with reason: {intent.reason}")
-            
-            if intent.intent == "edit":
-                await self._handle_edit_intent(intent)
-            elif intent.intent == "create":
-                await self._handle_create_intent(intent)
-            elif intent.intent == "delete":
-                await self._handle_delete_intent(intent)
-        
+            handler = intent_handlers.get(intent.intent)
+            if handler is not None:
+                # Schedule the handler concurrently.
+                tasks.append(asyncio.create_task(handler(intent)))
+            else:
+                # Log or handle unexpected intents here if desired.
+                print(f"⚠️  No handler found for intent '{intent.intent}'. Skipping.")
+
+        # Await all handler tasks concurrently.
+        if tasks:
+            await asyncio.gather(*tasks)
+
+        # Assemble and return the aggregated response object.
         return EditDocumentationResponse(
             edit=self.edit_changes,
             create=self.create_documents,
-            delete=self.delete_documents
+            delete=self.delete_documents,
         )
 
     async def _handle_edit_intent(self, intent) -> None:
@@ -82,12 +105,31 @@ class MainEditor:
     async def _get_edit_suggestions(self, intent) -> EditAgentResponse:
         """
         Get edit suggestions from the edit suggestion agent.
+        Runs two agents concurrently - one with API reference context and one without.
         """
-        edit_suggestion_agent_response = await Runner.run(edit_suggestion_agent,
-            f"User query: {self.query} Task: {intent.task} Reason: {intent.reason}. Provide edit suggestions for the documentation based on the task"
+        query_text = f"User query: {self.query} Task: {intent.task} Reason: {intent.reason}. Provide edit suggestions for the documentation based on the task"
+        
+        # Run two agents concurrently
+        api_ref_task = Runner.run(edit_suggestion_agent, query_text, context=ApiRef(is_api_ref=True))
+        non_api_ref_task = Runner.run(edit_suggestion_agent, query_text, context=ApiRef(is_api_ref=False))
+        
+        # Await both tasks concurrently
+        api_ref_response, non_api_ref_response = await asyncio.gather(api_ref_task, non_api_ref_task)
+        
+        # Parse both responses
+        api_ref_suggestions = api_ref_response.final_output_as(EditAgentResponse)
+        print("API Reference Suggestions:")
+        print(api_ref_suggestions.model_dump_json(indent=2))
+        non_api_ref_suggestions = non_api_ref_response.final_output_as(EditAgentResponse)
+        print("Non-API Reference Suggestions:")
+        print(non_api_ref_suggestions.model_dump_json(indent=2))
+        
+        # Combine suggestions from both agents
+        combined_suggestions = EditAgentResponse(
+            suggestions=api_ref_suggestions.suggestions + non_api_ref_suggestions.suggestions
         )
-        edit_agent_suggestions = edit_suggestion_agent_response.final_output_as(EditAgentResponse)
-        return edit_agent_suggestions
+        
+        return combined_suggestions
     
     async def _process_edit_suggestions(self, suggestions) -> list[DocumentEdit]:
         """
@@ -123,7 +165,11 @@ class MainEditor:
         """
         Detect the intent from the user's query.
         """
-        response = await Runner.run(intent_agent, f"Detect intent for query: {self.query}")
+        if self.document_id:
+            query=f"Detect intent for query: {self.query} only for document ID: {self.document_id}"
+        else:
+            query = f"Detect intent for query: {self.query}"
+        response = await Runner.run(intent_agent, query)
         print(f"Detected intent: {response}")
         return response.final_output_as(Detected_Intent)
 
