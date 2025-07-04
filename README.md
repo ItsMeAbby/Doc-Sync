@@ -262,12 +262,24 @@ cd nextjs-frontend && pnpm run generate-client
 ### Agent Architecture
 The system uses OpenAI Agents SDK with a multi-agent coordination pattern:
 
+![Agentic Layer Architecture](https://excalidraw.com/#json=YKR0472DqI9opb_cEqW2H,iOPy0UDTDNp9VB1BL_03Cw)
+
+The architecture follows a structured flow where user input is processed through specialized AI agents:
+
 1. **Intent Detection Agent**: Analyzes user queries to determine edit/create/delete intent
-2. **Edit Suggestion Agent**: Identifies relevant documents and suggests modifications  
-3. **Content Edit Agent**: Generates precise text replacements
-4. **Create Content Agent**: Generates new documentation content
-5. **Delete Content Agent**: Identifies documents for deletion
-6. **MainEditor**: Coordinates multi-agent workflows with concurrent processing
+2. **Create Agent**: Handles document and content creation workflows
+   - Generates new documentation content
+   - Creates folder structures and hierarchies
+3. **Edit Suggestion Agent**: Manages document modification workflows
+   - Identifies relevant documents for editing
+   - Runs separately for API and non-API documents
+   - Generates precise text replacements through Content Edit Agent
+4. **Delete Agent**: Handles document deletion operations
+   - Identifies documents for removal
+   - Manages soft deletion with recovery capabilities
+5. **MainEditor**: Coordinates multi-agent workflows with concurrent processing
+
+All agents operate within the **Agentic Layer** that processes user input and generates structured suggestions, which are then presented to the user for confirmation before applying changes.
 
 ### Content Processing Pipeline
 - **Keyword Extraction**: Automatic extraction using OpenAI API
