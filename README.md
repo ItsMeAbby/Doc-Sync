@@ -358,50 +358,7 @@ cd nextjs-frontend && pnpm run test --watch
 cd nextjs-frontend && pnpm run coverage
 ```
 
-## Docker Development
-
-### Container Management
-```bash
-# Build all services
-make docker-build
-
-# Start development environment
-make docker-start-backend
-make docker-start-frontend
-
-# Access container shells
-make docker-backend-shell
-make docker-frontend-shell
-```
-
-## Performance Optimizations
-
-### Backend Optimizations
-- **Async Operations**: All database and AI operations are asynchronous
-- **Connection Pooling**: Supabase handles connection management
-- **Concurrent Processing**: Multi-agent workflows run in parallel
-- **Caching Decorators**: Available for expensive operations
-
-### Frontend Optimizations
-- **Code Splitting**: Automatic by Next.js App Router
-- **Image Optimization**: Next.js built-in optimizations
-- **Bundle Analysis**: TypeScript checking at build time
-- **Lazy Loading**: Components loaded as needed
-
-## Security Considerations
-
-- **Environment Variables**: All secrets configured through environment
-- **CORS Configuration**: Proper cross-origin request handling
-- **Input Validation**: Pydantic models validate all API inputs
-- **SQL Injection Prevention**: Supabase client handles parameterization
-- **XSS Protection**: React's built-in XSS protection
-
 ## Monitoring and Debugging
-
-### Logging
-- **Structured Logging**: JSON-formatted logs with log levels
-- **Request Tracing**: Track requests through the system
-- **Error Tracking**: Comprehensive error logging and handling
 
 ### Development Tools
 - **API Documentation**: Auto-generated Swagger UI at `/docs`
@@ -410,25 +367,12 @@ make docker-frontend-shell
 
 ## Production Deployment
 
-### Backend Deployment
-- **Serverless Ready**: Compatible with Vercel, Railway, Heroku
-- **Environment Configuration**: All configuration via environment variables
-- **Database Migrations**: Supabase handles schema management
-- **Scaling**: Horizontal scaling through container orchestration
-
-### Frontend Deployment
-- **Static Optimization**: Next.js build optimization
-- **CDN Ready**: Static assets optimized for CDN delivery
-- **Edge Functions**: Vercel edge functions for dynamic content
-- **Progressive Web App**: PWA capabilities built-in
-
 ### Database Setup
 ```bash
 # Set up Supabase project
 1. Create account at supabase.com
 2. Create new project
 3. Copy URL and anon key to environment variables
-4. Run migrations (handled automatically)
 ```
 
 For comprehensive development and deployment guidance, see the `CLAUDE.md` file which contains detailed instructions for working with this codebase.
