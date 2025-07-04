@@ -30,7 +30,7 @@ def create_app() -> FastAPI:
     # Include routes
     app.include_router(documents_router, prefix="/api/documents")
     app.include_router(edit_documentation_router, prefix="/api/edit")
-    
+
     return app
 
 

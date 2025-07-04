@@ -9,7 +9,9 @@ from app.config import settings
 openai.api_key = settings.OPENAI_API_KEY
 
 openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-async def create_embedding(text: str) -> List[float]| None:
+
+
+async def create_embedding(text: str) -> List[float] | None:
     """
     Create embeddings for the given text using OpenAI's embedding model.
     Returns a 1536-dimensional vector.
@@ -21,11 +23,11 @@ async def create_embedding(text: str) -> List[float]| None:
         response = await openai_client.embeddings.create(
             model=settings.OPENAI_EMBEDDING_MODEL,
             input=text,
-            dimensions=settings.VECTOR_DIMENSION
+            dimensions=settings.VECTOR_DIMENSION,
         )
     except:
         return None
-        
+
     # Extract the embedding vector
     embedding: Embedding = response.data[0]
     return embedding.embedding
@@ -38,7 +40,7 @@ async def extract_keywords(text: str, language: str = "en") -> List[str]:
     """
     if not text or text.strip() == "":
         return []
-    
+
     prompt = f"""
 Extract the 10 most important keywords or key phrases from the following text.
 The text is a documentation of page in markdown format.
@@ -51,16 +53,15 @@ TEXT:
 
 KEYWORDS (JSON array only, no explanation):
     """
-    
+
     try:
         response = await openai_client.chat.completions.create(
             model=settings.OPENAI_MODEL,
             messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
         )
-        
+
         result = response.choices[0].message.content
-        
 
         try:
             keywords_data = json.loads(result)
@@ -71,32 +72,34 @@ KEYWORDS (JSON array only, no explanation):
                 for key, value in keywords_data.items():
                     if isinstance(value, list):
                         return value
-                
+
                 # If all else fails, try to parse the entire response as an array
                 if isinstance(keywords_data, list):
                     return keywords_data
-                
+
                 return []
         except json.JSONDecodeError:
             return []
-            
+
     except Exception as e:
         print(f"Error extracting keywords with OpenAI: {str(e)}")
         return []
 
 
-async def generate_summary(text: str, language: str = "en", max_length: int = 400) -> str:
+async def generate_summary(
+    text: str, language: str = "en", max_length: int = 400
+) -> str:
     """
     Generate a summary of the text using OpenAI's model.
     Returns a summary string.
     """
     if not text or text.strip() == "":
         return "No content available"
-    
+
     # If text is already short, just return it
     if len(text) <= max_length:
         return text
-    
+
     prompt = f"""
     Summarize the following text in {language} language. 
     The summary should be concise (maximum {max_length} characters) and capture the main points.
@@ -107,17 +110,18 @@ async def generate_summary(text: str, language: str = "en", max_length: int = 40
     
     SUMMARY:
     """
-    
+
     try:
-        print(f"Generating summary for text of length {len(text.split(" "))} with OpenAI... using model {settings.OPENAI_MODEL}")
+        print(
+            f"Generating summary for text of length {len(text.split(" "))} with OpenAI... using model {settings.OPENAI_MODEL}"
+        )
         response = await openai_client.chat.completions.create(
-            model=settings.OPENAI_MODEL,
-            messages=[{"role": "user", "content": prompt}]
+            model=settings.OPENAI_MODEL, messages=[{"role": "user", "content": prompt}]
         )
         summary = response.choices[0].message.content.strip()
-            
+
         return summary
-        
+
     except Exception as e:
         print(f"Error generating summary with OpenAI: {str(e)}")
         # Fallback to a simple summary
@@ -125,4 +129,3 @@ async def generate_summary(text: str, language: str = "en", max_length: int = 40
         if len(words) > 30:
             return " ".join(words[:30]) + "..."
         return text
-    

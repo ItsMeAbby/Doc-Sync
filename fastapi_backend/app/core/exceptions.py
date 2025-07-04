@@ -43,7 +43,9 @@ def handle_service_exception(e: Exception) -> HTTPException:
         return HTTPException(status_code=410, detail=str(e))
     elif isinstance(e, ValidationError):
         return HTTPException(status_code=400, detail=str(e))
-    elif isinstance(e, (DocumentCreationError, DocumentUpdateError, ContentProcessingError)):
+    elif isinstance(
+        e, (DocumentCreationError, DocumentUpdateError, ContentProcessingError)
+    ):
         return HTTPException(status_code=500, detail=str(e))
     else:
         return HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")

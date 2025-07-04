@@ -5,6 +5,8 @@ from agents import Agent
 
 from app.services.prompts import INTENT_PROMPT
 from app.config import settings
+
+
 # based on user query, you identify what typemof edir user wants to do
 #  doe suser want to create a new document, delete a document, or edit an existing one, or move a document
 class Intent_Item(BaseModel):
@@ -15,15 +17,19 @@ class Intent_Item(BaseModel):
     task: str
     """The specific task associated with the detected intent, if applicable. like for particular intent, rewrite user query as a query specific to this intent only"""
 
+
 class Detected_Intent(BaseModel):
     """
     Represents the detected intent from the user's query.
     """
+
     intents: list[Intent_Item]
     """List of detected intents with reasoning."""
-intent_agent=Agent(
+
+
+intent_agent = Agent(
     name="IntentDetectionAgent",
     instructions=INTENT_PROMPT,
     model=settings.OPENAI_MODEL,
-    output_type=Detected_Intent
+    output_type=Detected_Intent,
 )

@@ -32,7 +32,9 @@ class DocumentUpdate(BaseModel):
     is_api_ref: Optional[bool] = None
     is_deleted: Optional[bool] = None
     parent_id: Optional[str] = None
-    current_version_id: Optional[str] = None  # Optional for updates, can be used to set the current version
+    current_version_id: Optional[
+        str
+    ] = None  # Optional for updates, can be used to set the current version
 
 
 class DocumentContentBase(BaseModel):
@@ -53,21 +55,21 @@ class DocumentContentRead(DocumentContentBase):
     document_id: str
     created_at: datetime
     updated_at: datetime
-    name: Optional[str] = None  
-    path: Optional[str] = None  
+    name: Optional[str] = None
+    path: Optional[str] = None
     title: Optional[str] = None
-    latest: Optional[bool] = None  # Flag to indicate if this is the current/latest version
-
-
-
+    latest: Optional[
+        bool
+    ] = None  # Flag to indicate if this is the current/latest version
 
 
 class DocumentWithContent(DocumentRead):
     """Extended document model that includes content fields"""
+
     markdown_content: str = ""
     language: Optional[str] = None
     keywords_array: List[str] = []
-    children: List['DocumentWithContent'] = []
+    children: List["DocumentWithContent"] = []
 
     class Config:
         from_attributes = True
@@ -75,7 +77,8 @@ class DocumentWithContent(DocumentRead):
 
 class LanguageDocumentation(BaseModel):
     """Model for language-specific documentation collection"""
-    documentation: List[DocumentWithContent] =[]
+
+    documentation: List[DocumentWithContent] = []
     api_references: List[DocumentWithContent] = []
 
     class Config:
@@ -84,10 +87,12 @@ class LanguageDocumentation(BaseModel):
 
 class GetAllDocumentsResponse(BaseModel):
     """Response model for the get all documents API endpoint"""
+
     en: Optional[LanguageDocumentation] = None
     ja: Optional[LanguageDocumentation] = None  # Japanese documentation if available
-    
+
     class Config:
         from_attributes = True
+
 
 DocumentWithContent.model_rebuild()

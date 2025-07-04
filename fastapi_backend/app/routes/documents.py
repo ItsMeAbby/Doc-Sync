@@ -1,4 +1,3 @@
-
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Depends
@@ -20,9 +19,9 @@ router = APIRouter(tags=["documents"])
 
 @router.post("/", response_model=DocumentRead)
 async def create_document(
-    document: DocumentCreate, 
+    document: DocumentCreate,
     content: Optional[DocumentContentCreate] = None,
-    service: DocumentService = Depends(get_document_service)
+    service: DocumentService = Depends(get_document_service),
 ):
     """
     Create a new document with optional content.
@@ -33,10 +32,11 @@ async def create_document(
     except Exception as e:
         raise handle_service_exception(e)
 
+
 @router.get("/root", response_model=List[DocumentRead])
 async def get_root_documents(
     is_api_ref: Optional[bool] = None,
-    service: DocumentService = Depends(get_document_service)
+    service: DocumentService = Depends(get_document_service),
 ):
     """Get all root-level documents (no parent)"""
     try:
@@ -47,8 +47,7 @@ async def get_root_documents(
 
 @router.get("/{doc_id}", response_model=DocumentRead)
 async def get_document(
-    doc_id: str,
-    service: DocumentService = Depends(get_document_service)
+    doc_id: str, service: DocumentService = Depends(get_document_service)
 ):
     """Get document metadata + latest version"""
     try:
@@ -59,8 +58,7 @@ async def get_document(
 
 @router.get("/{doc_id}/versions", response_model=List[DocumentContentRead])
 async def list_document_versions(
-    doc_id: str,
-    service: DocumentService = Depends(get_document_service)
+    doc_id: str, service: DocumentService = Depends(get_document_service)
 ):
     """List all versions of a document"""
     try:
@@ -71,9 +69,9 @@ async def list_document_versions(
 
 @router.get("/{doc_id}/versions/{version_id}", response_model=DocumentContentRead)
 async def get_document_version(
-    doc_id: str, 
+    doc_id: str,
     version_id: str,
-    service: DocumentService = Depends(get_document_service)
+    service: DocumentService = Depends(get_document_service),
 ):
     """Get a specific version (optional: `latest` as alias)"""
     try:
@@ -82,11 +80,9 @@ async def get_document_version(
         raise handle_service_exception(e)
 
 
-
 @router.get("/{parent_id}/children", response_model=List[DocumentRead])
 async def get_child_documents(
-    parent_id: str,
-    service: DocumentService = Depends(get_document_service)
+    parent_id: str, service: DocumentService = Depends(get_document_service)
 ):
     """Get all child documents"""
     try:
@@ -95,12 +91,9 @@ async def get_child_documents(
         raise handle_service_exception(e)
 
 
-
-
 @router.get("/{doc_id}/parents", response_model=List[DocumentRead])
 async def get_document_parents(
-    doc_id: str,
-    service: DocumentService = Depends(get_document_service)
+    doc_id: str, service: DocumentService = Depends(get_document_service)
 ):
     """Get all ancestors (full lineage)"""
     try:
@@ -109,15 +102,13 @@ async def get_document_parents(
         raise handle_service_exception(e)
 
 
-
-
-@router.get("/",response_model=GetAllDocumentsResponse)
+@router.get("/", response_model=GetAllDocumentsResponse)
 async def get_all_documents(
     is_deleted: Optional[bool] = Query(False),
     is_api_ref: Optional[bool] = None,
     parent_id: Optional[str] = None,
-    service: DocumentService = Depends(get_document_service)
-)-> GetAllDocumentsResponse:
+    service: DocumentService = Depends(get_document_service),
+) -> GetAllDocumentsResponse:
     """Get all documents with complete hierarchy (with optional filters) and its content"""
     try:
         return await service.get_all_documents(is_deleted, is_api_ref, parent_id)
@@ -127,9 +118,9 @@ async def get_all_documents(
 
 @router.put("/{doc_id}", response_model=DocumentRead)
 async def update_document(
-    doc_id: str, 
+    doc_id: str,
     document: DocumentUpdate,
-    service: DocumentService = Depends(get_document_service)
+    service: DocumentService = Depends(get_document_service),
 ):
     """Update document metadata (title, path, etc.) or delete it"""
     try:
@@ -140,10 +131,10 @@ async def update_document(
 
 @router.post("/{doc_id}/versions", response_model=DocumentContentRead)
 async def create_document_version(
-    doc_id: str, 
+    doc_id: str,
     content: DocumentContentCreate,
-    service: DocumentService = Depends(get_document_service)
-)-> DocumentContentRead:
+    service: DocumentService = Depends(get_document_service),
+) -> DocumentContentRead:
     """Create a new version for a document (and update latest version)"""
     try:
         return await service.create_document_version(doc_id, content)

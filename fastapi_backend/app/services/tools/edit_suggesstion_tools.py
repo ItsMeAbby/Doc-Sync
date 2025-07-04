@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 import sys
 import os
+
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
 from pydantic import BaseModel, Field
 from typing_extensions import Literal
@@ -12,6 +13,8 @@ import asyncio
 from agents import RunContextWrapper, function_tool, Agent
 
 from app.config import settings
+
+
 class Document(BaseModel):
     id: str
     title: Optional[str]
@@ -29,18 +32,23 @@ class Document(BaseModel):
 class SimilarDocumentsResponse(BaseModel):
     documents: Optional[List[Document]]
 
+
 class EmbeddingsConfiguration(BaseModel):
     query: str
     language: Literal["en", "ja"] = "en"
     is_api_ref: bool = False
     top_k: int = 5
 
+
 class AllDocumentsConfiguration(BaseModel):
     is_api_ref: bool = False
+
 
 class FetchDocumentConfiguration(BaseModel):
     document_id: str
     version: str
+
+
 @function_tool
 async def get_similar_documents_based_on_embeddings(
     config: EmbeddingsConfiguration,
@@ -70,27 +78,30 @@ async def get_similar_documents_based_on_embeddings(
     Raises:
         Exception: If there is an error executing the similarity search.
     """
-    query_embeddings=await create_embedding(config.query)
+    query_embeddings = await create_embedding(config.query)
     if query_embeddings is None:
         return SimilarDocumentsResponse(documents=[])
-    
-    response = supabase.rpc("execute_similarity_search", {
-        "query_embedding": query_embeddings,
-        "lang": config.language,
-        "api_ref": config.is_api_ref,
-        "top_k": config.top_k
-    }).execute()
+
+    response = supabase.rpc(
+        "execute_similarity_search",
+        {
+            "query_embedding": query_embeddings,
+            "lang": config.language,
+            "api_ref": config.is_api_ref,
+            "top_k": config.top_k,
+        },
+    ).execute()
 
     documents = response.data
     if not documents:
         return SimilarDocumentsResponse(documents=[])
-    return SimilarDocumentsResponse(
-        documents=documents
-    )
+    return SimilarDocumentsResponse(documents=documents)
+
+
 @function_tool
 async def get_all_document_summaries(
-    wrapper: RunContextWrapper[ApiRef]
-)-> SimilarDocumentsResponse:
+    wrapper: RunContextWrapper[ApiRef],
+) -> SimilarDocumentsResponse:
     """
     This tool retrieves all documents summaries and metadata.
     Args:
@@ -113,10 +124,13 @@ async def get_all_document_summaries(
         Exception: If there is an error executing the getting all document summaries.
     """
     # get all documents
-    print("Fetching all documents summaries for is_api_ref:", wrapper.context.is_api_ref)
+    print(
+        "Fetching all documents summaries for is_api_ref:", wrapper.context.is_api_ref
+    )
     query = (
-            supabase.table("documents")
-            .select("""
+        supabase.table("documents")
+        .select(
+            """
                 *,
                 document_contents:current_version_id (
                     version,
@@ -125,44 +139,44 @@ async def get_all_document_summaries(
                     keywords_array,
                     urls_array
                 )
-            """)
-            .eq("is_deleted", False)
-            .eq("is_api_ref", wrapper.context.is_api_ref)  # Filter by API reference if specified
-            .order("created_at", desc=True)
-            .not_.is_("current_version_id", None)
+            """
         )
-    response= query.execute()
+        .eq("is_deleted", False)
+        .eq(
+            "is_api_ref", wrapper.context.is_api_ref
+        )  # Filter by API reference if specified
+        .order("created_at", desc=True)
+        .not_.is_("current_version_id", None)
+    )
+    response = query.execute()
     raw_docs = response.data
     documents = []
     for doc in raw_docs:
-        content = doc.get("document_contents",{})
+        content = doc.get("document_contents", {})
         if not content:
             continue
         documents.append(
-                Document(
-                    id=doc["id"],
-                    title=doc.get("title"),
-                    version=content.get("version", ""),
-                    markdown_content=None,  # Assuming markdown_content is not needed here
-                    summary=content.get("summary", ""),
-                    similarity=None,  # No similarity score for all documents
-                    path=doc.get("path", ""),
-                    language= content.get("language", "en"),
-                    keywords_array=content.get("keywords_array", []),
-                    urls_array=content.get("urls_array", []),
-                    is_api_ref=doc.get("is_api_ref", False)
-                )
+            Document(
+                id=doc["id"],
+                title=doc.get("title"),
+                version=content.get("version", ""),
+                markdown_content=None,  # Assuming markdown_content is not needed here
+                summary=content.get("summary", ""),
+                similarity=None,  # No similarity score for all documents
+                path=doc.get("path", ""),
+                language=content.get("language", "en"),
+                keywords_array=content.get("keywords_array", []),
+                urls_array=content.get("urls_array", []),
+                is_api_ref=doc.get("is_api_ref", False),
             )
+        )
     if not documents:
         return SimilarDocumentsResponse(documents=[])
-    return SimilarDocumentsResponse(
-        documents=documents
-    )
+    return SimilarDocumentsResponse(documents=documents)
+
 
 @function_tool
-async def get_document_by_version(
-    config: FetchDocumentConfiguration
-) -> Document:
+async def get_document_by_version(config: FetchDocumentConfiguration) -> Document:
     """
     This tool retrieves a specific version of a document by its ID and version.
     Args:
@@ -188,8 +202,9 @@ async def get_document_by_version(
     document_id = config.document_id
     version = config.version
     response = (
-            supabase.table("documents")
-            .select("""
+        supabase.table("documents")
+        .select(
+            """
                 *,
                 document_contents:current_version_id (
                     version,
@@ -199,19 +214,24 @@ async def get_document_by_version(
                     urls_array,
                     markdown_content
                 )
-            """)
-            .eq("id", document_id)
-            .eq("current_version_id", version)
-            .eq("is_deleted", False)
-            .single()
+            """
         )
+        .eq("id", document_id)
+        .eq("current_version_id", version)
+        .eq("is_deleted", False)
+        .single()
+    )
     result = response.execute()
     if not result.data:
-        raise Exception(f"Document with ID {document_id} and version {version} not found.")
+        raise Exception(
+            f"Document with ID {document_id} and version {version} not found."
+        )
     doc = result.data
     content = doc.get("document_contents", {})
     if not content:
-        raise Exception(f"Document content for ID {document_id} and version {version} not found.")
+        raise Exception(
+            f"Document content for ID {document_id} and version {version} not found."
+        )
     return Document(
         id=doc["id"],
         title=doc.get("title"),
@@ -223,8 +243,9 @@ async def get_document_by_version(
         language=content.get("language", "en"),
         keywords_array=content.get("keywords_array", []),
         urls_array=content.get("urls_array", []),
-        is_api_ref=doc.get("is_api_ref", False)
+        is_api_ref=doc.get("is_api_ref", False),
     )
+
 
 if __name__ == "__main__":
     # Example usage
@@ -232,9 +253,8 @@ if __name__ == "__main__":
         response = await get_document_by_version(
             FetchDocumentConfiguration(
                 document_id="d123c732-7f44-4cf0-aafb-13c5bb160bc6",
-                version="8e83d392-da47-49eb-8bc8-27a1130e40c7"
+                version="8e83d392-da47-49eb-8bc8-27a1130e40c7",
             )
-
         )
         print(response.model_dump_json(indent=2))
 

@@ -2,7 +2,7 @@
 #  doe suser want to create a new document, delete a document, or edit an existing one, or move a document
 
 
-INTENT_PROMPT="""
+INTENT_PROMPT = """
 You are an expert in understanding user intents based on their queries. Your task is to analyze the provided query and determine the user's intent regarding document management.
 The user may want to:
 1.Edit an existing document
@@ -21,7 +21,7 @@ The user may want to:
 
 """
 
-EDIT_SUGGESTION_PROMPT="""
+EDIT_SUGGESTION_PROMPT = """
 You are an expert documentation editor specializing in OpenAI Agents SDK documentation. Your role is to analyze user requests 
 for documentation changes, identify the relevant documents that need editing, and provide specific, actionable editing suggestions.
 

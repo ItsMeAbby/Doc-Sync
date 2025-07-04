@@ -8,8 +8,10 @@ import asyncio
 from agents import function_tool
 from app.config import settings
 
+
 class GetAllPathsConfiguration(BaseModel):
     is_api_ref: bool = False
+
 
 class DocumentPath(BaseModel):
     id: str
@@ -17,38 +19,41 @@ class DocumentPath(BaseModel):
     name: str
     title: Optional[str]
 
+
 class AllPathsResponse(BaseModel):
     paths: List[DocumentPath]
 
-@function_tool
-async def get_parents_paths() -> List[Dict[str, Any]]:
-        """Get all root-level documents (no parent)
-        Returns:
-        """
-        
-        try:
-            query = (supabase.table("documents")
-                    .select("*")
-                    .is_("parent_id", None)
-                    .eq("is_deleted", False)
-                    .is_("current_version_id", None))
-            
-            result = query.execute()
-            return result.data
-        except Exception as e:
-            raise Exception(f"Error fetching root documents: {str(e)}")
 
 @function_tool
-async def get_all_document_paths(
-    config: GetAllPathsConfiguration
-) -> AllPathsResponse:
+async def get_parents_paths() -> List[Dict[str, Any]]:
+    """Get all root-level documents (no parent)
+    Returns:
+    """
+
+    try:
+        query = (
+            supabase.table("documents")
+            .select("*")
+            .is_("parent_id", None)
+            .eq("is_deleted", False)
+            .is_("current_version_id", None)
+        )
+
+        result = query.execute()
+        return result.data
+    except Exception as e:
+        raise Exception(f"Error fetching root documents: {str(e)}")
+
+
+@function_tool
+async def get_all_document_paths(config: GetAllPathsConfiguration) -> AllPathsResponse:
     """
     Get all document paths to check what already exists.
-    
+
     Args:
         config (GetAllPathsConfiguration): Configuration containing:
             - is_api_ref (bool): Whether to get API reference documents
-    
+
     Returns:
         AllPathsResponse: List of all document paths
     """
@@ -60,18 +65,20 @@ async def get_all_document_paths(
             .eq("is_deleted", False)
             .eq("is_api_ref", config.is_api_ref)
         )
-        
+
         result = query.execute()
-        
+
         paths = []
         for doc in result.data:
-            paths.append(DocumentPath(
-                id=doc["id"],
-                path=doc["path"],
-                name=doc["name"],
-                title=doc.get("title")
-            ))
-        
+            paths.append(
+                DocumentPath(
+                    id=doc["id"],
+                    path=doc["path"],
+                    name=doc["name"],
+                    title=doc.get("title"),
+                )
+            )
+
         return AllPathsResponse(paths=paths)
     except Exception as e:
         return AllPathsResponse(paths=[])

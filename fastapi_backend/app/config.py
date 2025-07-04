@@ -5,6 +5,7 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 
+
 class Settings(BaseSettings):
     # OpenAPI docs
     OPENAPI_URL: str = "/openapi.json"
@@ -18,17 +19,17 @@ class Settings(BaseSettings):
     # Supabase
     SUPABASE_URL: str
     SUPABASE_KEY: str
-    
+
     # OpenAI
     OPENAI_API_KEY: str
     OPENAI_MODEL: str = "gpt-4.1"
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-large"
-    
+
     # DocSync settings
     VECTOR_DIMENSION: int = 1536
     LANGUAGES: Union[List[str], str] = ["en"]
-    
-    @field_validator('LANGUAGES', mode='before')
+
+    @field_validator("LANGUAGES", mode="before")
     @classmethod
     def validate_languages(cls, v):
         """Validate and parse LANGUAGES field"""
@@ -43,7 +44,7 @@ class Settings(BaseSettings):
             except json.JSONDecodeError:
                 return ["en"]
         return v
-    
+
     @property
     def languages_list(self) -> List[str]:
         """Parse the LANGUAGES environment variable as a JSON list."""

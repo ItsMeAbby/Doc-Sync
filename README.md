@@ -116,6 +116,8 @@ OPENAPI_OUTPUT_FILE=../local-shared-data/openapi.json
 make start-backend
 
 # Start frontend server (in another terminal)
+cd nextjs-frontend && pnpm install
+cd ..
 make start-frontend
 ```
 
@@ -125,7 +127,9 @@ make start-frontend
 cd fastapi_backend && ./start.sh
 
 # Frontend (in another terminal)
-cd nextjs-frontend && ./start.sh
+
+cd nextjs-frontend && pnpm install 
+./start.sh
 ```
 
 ### 3. Access the Application
@@ -149,8 +153,6 @@ cd fastapi_backend && uv run mypy app
 # Code formatting
 cd fastapi_backend && uv run ruff format app
 
-# Generate database migration
-make docker-db-schema migration_name="description"
 ```
 
 ### Frontend Development

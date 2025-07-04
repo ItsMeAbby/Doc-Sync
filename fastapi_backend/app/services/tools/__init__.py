@@ -6,13 +6,13 @@ from .edit_suggesstion_tools import (
     SimilarDocumentsResponse,
     EmbeddingsConfiguration,
     AllDocumentsConfiguration,
-    FetchDocumentConfiguration
+    FetchDocumentConfiguration,
 )
 from .create_tools import (
     get_all_document_paths,
     GetAllPathsConfiguration,
     DocumentPath,
-    AllPathsResponse
+    AllPathsResponse,
 )
 
 __all__ = [
@@ -27,5 +27,5 @@ __all__ = [
     "get_all_document_paths",
     "GetAllPathsConfiguration",
     "DocumentPath",
-    "AllPathsResponse"
+    "AllPathsResponse",
 ]

@@ -7,6 +7,7 @@ class ContentChange(BaseModel):
     """
     Represents a change to be made in the document.
     """
+
     old_string: str
     """The text to replace (must be unique within the provided content)."""
     new_string: str
@@ -17,6 +18,7 @@ class DocumentEdit(BaseModel):
     """
     Represents a suggested edit to a document.
     """
+
     document_id: str
     """The ID of the document to be edited."""
     changes: List[ContentChange]
@@ -29,6 +31,7 @@ class Edits(BaseModel):
     """
     Represents a collection of edits to be made to multiple documents.
     """
+
     changes: List[DocumentEdit]
     """A list of document edits to be applied."""
 
@@ -37,6 +40,7 @@ class GeneratedDocument(BaseModel):
     """
     Represents a document to be created with content in multiple languages.
     """
+
     name: str
     title: str
     path: Optional[str] = None
@@ -50,6 +54,7 @@ class DocumentToDelete(BaseModel):
     """
     Represents a document to be deleted.
     """
+
     document_id: str
     version: str
     reason: Optional[str] = None
@@ -59,6 +64,7 @@ class DocumentSuggestion(BaseModel):
     """
     Represents a suggested edit to a document with explanation.
     """
+
     document_id: str
     version: str
     suggested_changes: str
@@ -70,6 +76,7 @@ class Intent(BaseModel):
     """
     Represents a detected intent from user query.
     """
+
     intent: str  # "edit", "create", "delete", "move", "other"
     reason: str
     confidence: float
@@ -80,8 +87,10 @@ class DetectedIntents(BaseModel):
     """
     Collection of detected intents from a user query.
     """
+
     intents: List[Intent]
     primary_intent: str
+
 
 @dataclass
 class ApiRef:

@@ -7,7 +7,12 @@ import markdown
 from bs4 import BeautifulSoup
 
 from app.config import settings
-from app.services.openai_service import create_embedding, extract_keywords, generate_summary
+from app.services.openai_service import (
+    create_embedding,
+    extract_keywords,
+    generate_summary,
+)
+
 
 def build_tree(documents: List[dict]) -> List[dict]:
     """Convert flat list to nested tree structure."""
@@ -22,8 +27,9 @@ def build_tree(documents: List[dict]) -> List[dict]:
                 parent["children"].append(id_to_node[doc["id"]])
         else:
             root_nodes.append(id_to_node[doc["id"]])
-    
+
     return root_nodes
+
 
 def clean_markdown_content(content: str) -> str:
     """
@@ -32,22 +38,23 @@ def clean_markdown_content(content: str) -> str:
     """
     if not content:
         return ""
-    
 
     # rplece "|     |     |\n| --- | --- |\n|" with "\n"\ use exact match no regex
     content = content.replace("|     |     |\n| --- | --- |\n|", "\n")
     content = content.replace("| ```", "\n```")
     content = content.replace("``` |", "```\n")
     # find using regex ```<br> random text <br>``` |,  bar is also included
-    content = re.sub(r'```<br>.*?<br>```', '', content)
-    code_block_pattern = r'```[\s\S]*?```'
+    content = re.sub(r"```<br>.*?<br>```", "", content)
+    code_block_pattern = r"```[\s\S]*?```"
     # replace <br> with \n in code blocks
-    content = re.sub(code_block_pattern, lambda m: m.group(0).replace('<br>', '\n'), content)
+    content = re.sub(
+        code_block_pattern, lambda m: m.group(0).replace("<br>", "\n"), content
+    )
     # Remove leading and trailing whitespace
     content = content.strip()
 
-    
     return content
+
 
 def detect_language(text: str) -> str:
     """
@@ -56,7 +63,7 @@ def detect_language(text: str) -> str:
     """
     if not text or text.strip() == "":
         return "en"  # Default to English for empty text
-        
+
     try:
         lang = detect(text)
         # Check if detected language is in our supported languages
@@ -74,24 +81,30 @@ def extract_urls_from_markdown(markdown_content: str) -> List[str]:
     """
     if not markdown_content:
         return []
-        
+
     # First, extract URLs using regex for plain URLs
     url_pattern = r'https?://[^\s)"\']+'
     plain_urls = re.findall(url_pattern, markdown_content)
-    
+
     # Then, convert markdown to HTML and extract links
     html = markdown.markdown(markdown_content)
-    soup = BeautifulSoup(html, 'html.parser')
-    
+    soup = BeautifulSoup(html, "html.parser")
+
     # Extract all href attributes from anchor tags
-    markdown_urls = [a.get('href') for a in soup.find_all('a') if a.get('href', '').startswith('http')]
-    
+    markdown_urls = [
+        a.get("href")
+        for a in soup.find_all("a")
+        if a.get("href", "").startswith("http")
+    ]
+
     # Combine and remove duplicates
     all_urls = list(set(plain_urls + markdown_urls))
     return all_urls
 
 
-async def process_document_content(markdown_content: str, language: Optional[str] = None) -> Dict[str, Any]:
+async def process_document_content(
+    markdown_content: str, language: Optional[str] = None
+) -> Dict[str, Any]:
     """
     Process document content to:
     1. Detect language if not provided
@@ -108,20 +121,21 @@ async def process_document_content(markdown_content: str, language: Optional[str
             "keywords_array": [],
             "urls_array": [],
             "summary": "No content available",
-            "embedding": [0.0] * settings.VECTOR_DIMENSION  # Zero embedding for empty content
+            "embedding": [0.0]
+            * settings.VECTOR_DIMENSION,  # Zero embedding for empty content
         }
-    
+
     # Detect language if not provided
     detected_language = language or detect_language(markdown_content)
-    
+
     # Extract URLs
     urls = extract_urls_from_markdown(markdown_content)
-    
+
     # Run OpenAI operations concurrently
     embedding_task = create_embedding(markdown_content)
     keywords_task = extract_keywords(markdown_content, detected_language)
     summary_task = generate_summary(markdown_content, detected_language)
-    
+
     # Wait for all tasks to complete
     embedding, keywords, summary = await asyncio.gather(
         embedding_task, keywords_task, summary_task
@@ -134,11 +148,11 @@ async def process_document_content(markdown_content: str, language: Optional[str
             embedding = await create_embedding(" ".join(keywords))
         else:
             embedding = [0.0] * settings.VECTOR_DIMENSION
-    
+
     return {
         "language": detected_language,
         "keywords_array": keywords,
         "urls_array": urls,
         "summary": summary,
-        "embedding": embedding
+        "embedding": embedding,
     }

@@ -13,10 +13,12 @@ from app.api.dependencies import get_edit_service
 router = APIRouter(tags=["edit_documentation"])
 
 
-@router.post("/", response_model=EditDocumentationResponse, summary="Edit Documentation")
+@router.post(
+    "/", response_model=EditDocumentationResponse, summary="Edit Documentation"
+)
 async def edit_documentation(
     edit_request: EditDocumentationRequest,
-    service: EditService = Depends(get_edit_service)
+    service: EditService = Depends(get_edit_service),
 ):
     """
     Endpoint to edit documentation based on a query.
@@ -27,10 +29,13 @@ async def edit_documentation(
         raise handle_service_exception(e)
 
 
-@router.post("/update_documentation", response_model=UpdateDocumentationResponse, summary="Update Documentation")
+@router.post(
+    "/update_documentation",
+    response_model=UpdateDocumentationResponse,
+    summary="Update Documentation",
+)
 async def update_documentation(
-    change_request: ChangeRequest,
-    service: EditService = Depends(get_edit_service)
+    change_request: ChangeRequest, service: EditService = Depends(get_edit_service)
 ) -> UpdateDocumentationResponse:
     """
     Endpoint to update documentation based on a change request.
