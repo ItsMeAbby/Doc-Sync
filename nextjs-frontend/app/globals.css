@@ -65,5 +65,11 @@
 
   body {
     @apply bg-background text-foreground;
+    overscroll-behavior: none;
+  }
+
+  /* Disable bounce effect on all scrollable elements */
+  * {
+    overscroll-behavior: none;
   }
 }

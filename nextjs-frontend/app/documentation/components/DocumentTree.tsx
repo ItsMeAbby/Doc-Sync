@@ -124,16 +124,30 @@ const DocumentTree: React.FC<DocumentTreeProps> = ({ documents, onSelectDocument
             <Skeleton className="h-6 w-10/12 ml-4" />
           </div>
         ) : documents.length > 0 ? (
-          documents.map((doc) => (
-            <DocumentTreeNode
-              key={doc.id}
-              document={doc}
-              onSelectDocument={onSelectDocument}
-              selectedDocument={selectedDocument}
-              level={0}
-              searchTerm={searchTerm}
-            />
-          ))
+          documents
+            .sort((a, b) => {
+              // Sort by: children first (files), then parents (folders) at bottom
+              const aHasChildren = a.children && a.children.length > 0;
+              const bHasChildren = b.children && b.children.length > 0;
+              
+              if (aHasChildren && !bHasChildren) return 1; // a is folder, b is file -> a goes after b
+              if (!aHasChildren && bHasChildren) return -1; // a is file, b is folder -> a goes before b
+              
+              // If both are same type, sort alphabetically
+              const aName = a.name || a.title || '';
+              const bName = b.name || b.title || '';
+              return aName.localeCompare(bName);
+            })
+            .map((doc) => (
+              <DocumentTreeNode
+                key={doc.id}
+                document={doc}
+                onSelectDocument={onSelectDocument}
+                selectedDocument={selectedDocument}
+                level={0}
+                searchTerm={searchTerm}
+              />
+            ))
         ) : (
           <div className="p-2 text-gray-500">No documents available</div>
         )}
