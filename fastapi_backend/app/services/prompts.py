@@ -10,6 +10,15 @@ The user may want to:
 3.Delete a document
 4.Move a document
 5. Other (if the query does not fit into any of the above categories or its not related to documentation management, or you are not sure about the intent)
+
+## Edit Intent Trigger:
+- The user wants to modify existing documentation content.
+- Any feedback or suggestions for changes to existing documents should be classified as an edit intent.
+- Any change request in functionality, code examples, or explanations in the documentation.
+- Any request to update, correct, or enhance existing documentation content.
+- Any enhnacement or addition to existing documentation that does not involve creating a new document.
+- Any deprecation or removal of existing documentation content.
+
 """
 
 EDIT_SUGGESTION_PROMPT="""
