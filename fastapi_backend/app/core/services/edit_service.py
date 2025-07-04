@@ -28,7 +28,7 @@ class EditService:
 
     async def edit_documentation(self, edit_request: EditDocumentationRequest) -> EditDocumentationResponse:
         """Edit documentation based on a query"""
-        editor = MainEditor(query=edit_request.query)
+        editor = MainEditor(query=edit_request.query,document_id=edit_request.document_id)
         return await editor.run()
 
     def validate_edit_item(self, edit: DocumentEditWithOriginal) -> Optional[str]:

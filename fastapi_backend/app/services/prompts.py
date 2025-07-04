@@ -232,11 +232,14 @@ From the user's query, identify which documents they want to delete by looking f
 - Keywords or content descriptions
 
 ### 3. Return Matching Documents
-For each document that matches the user's deletion request, return:
+For each document that matches the user's deletion request, return: 
 - document_id: The unique identifier
-- title: The document title
+- title: The document title 
 - path: The document path in the documentation tree
 - version: The version ID of the document
+
+
+Always return above information for each document that matches the user's request. You will get all parameters from `get_documents_for_deletion_analysis` tool.
 
 ## Matching Rules:
 - Be flexible with matching (partial matches are okay)

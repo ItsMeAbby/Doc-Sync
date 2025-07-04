@@ -11,8 +11,9 @@ import asyncio
 
 from app.models.edit_documentation import DocumentEditWithOriginal, EditDocumentationResponse, ChangeRequest
 class MainEditor:
-    def __init__(self, query: str):
+    def __init__(self, query: str, document_id: str = None):
         self.query = query
+        self.document_id : str = document_id  # Initialize document_id to None, can be set later if needed
         self.edit_changes: list[DocumentEdit] = []
         self.create_documents: list[GeneratedDocument] = []
         self.delete_documents : list[DocumentToDelete] = []
@@ -164,7 +165,11 @@ class MainEditor:
         """
         Detect the intent from the user's query.
         """
-        response = await Runner.run(intent_agent, f"Detect intent for query: {self.query}")
+        if self.document_id:
+            query=f"Detect intent for query: {self.query} only for document ID: {self.document_id}"
+        else:
+            query = f"Detect intent for query: {self.query}"
+        response = await Runner.run(intent_agent, query)
         print(f"Detected intent: {response}")
         return response.final_output_as(Detected_Intent)
 
