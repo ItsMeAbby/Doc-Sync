@@ -352,7 +352,7 @@ class TestDocuments:
         assert root_docs[0]["title"] == "Root Document 1"
         
         # Verify service was called
-        mock_document_service.get_root_documents.assert_called_once_with(True)
+        mock_document_service.get_root_documents.assert_called_once_with(None)
     
     @pytest.mark.asyncio(loop_scope="function")
     async def test_get_child_documents(self, test_client, mock_document_service):
