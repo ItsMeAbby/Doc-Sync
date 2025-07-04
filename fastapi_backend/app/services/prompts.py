@@ -234,9 +234,9 @@ From the user's query, identify which documents they want to delete by looking f
 ### 3. Return Matching Documents
 For each document that matches the user's deletion request, return: 
 - document_id: The unique identifier
-- title: The document title 
-- path: The document path in the documentation tree
-- version: The version ID of the document
+- title: The document title (should never be unspecified)
+- path: The document path in the documentation tree (should never be unspecified)
+- version: The version ID of the document (should never be unspecified)
 
 
 Always return above information for each document that matches the user's request. You will get all parameters from `get_documents_for_deletion_analysis` tool.
