@@ -250,7 +250,11 @@ export default function DocumentationPage() {
                   <TabsTrigger value="api_references" className="flex-1 text-xs lg:text-sm">API References</TabsTrigger>
                 </TabsList>
                 <TabsContent value="documentation" className="mt-4">
-                  {documents[selectedLanguage]?.documentation ? (
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[700px]">
+                      <Spinner size="sm" />
+                    </div>
+                  ) : documents[selectedLanguage]?.documentation ? (
                     <DocumentTree
                       documents={documents[selectedLanguage].documentation}
                       onSelectDocument={handleDocumentSelect}
@@ -258,11 +262,17 @@ export default function DocumentationPage() {
                       isLoading={loading}
                     />
                   ) : (
-                    <div>No documentation available</div>
+                    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[700px]">
+                      <p className="text-gray-600 dark:text-gray-400">No documentation available</p>
+                    </div>
                   )}
                 </TabsContent>
                 <TabsContent value="api_references" className="mt-4">
-                  {documents[selectedLanguage]?.api_references ? (
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[700px]">
+                      <Spinner size="sm" />
+                    </div>
+                  ) : documents[selectedLanguage]?.api_references ? (
                     <DocumentTree
                       documents={documents[selectedLanguage].api_references}
                       onSelectDocument={handleDocumentSelect}
@@ -270,7 +280,9 @@ export default function DocumentationPage() {
                       isLoading={loading}
                     />
                   ) : (
-                    <div>No API references available</div>
+                    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[700px]">
+                      <p className="text-gray-600 dark:text-gray-400">No API references available</p>
+                    </div>
                   )}
                 </TabsContent>
               </Tabs>

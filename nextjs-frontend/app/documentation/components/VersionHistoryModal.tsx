@@ -154,14 +154,16 @@ export default function VersionHistoryModal({ document, isOpen, onClose, onRever
 
           {/* Loading State */}
           {loading && (
-            <div className="space-y-3">
+            <div className="space-y-3 min-h-[400px]">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-40 w-full" />
             </div>
           )}
 
           {/* Version Selection */}
-          {!loading && !error && versions.length > 0 && (
+          {!loading && !error && versions.length > 0 ? (
             <>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -283,15 +285,14 @@ export default function VersionHistoryModal({ document, isOpen, onClose, onRever
                 </Tabs>
               )}
             </>
-          )}
-
-          {/* No Versions State */}
-          {!loading && !error && versions.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+          ) : !loading && !error && versions.length === 0 ? (
+            /* No Versions State */
+            <div className="text-center py-8 text-gray-500 min-h-[400px] flex flex-col items-center justify-center">
               <Clock className="h-12 w-12 mx-auto mb-2 text-gray-300" />
               <p>No version history available for this document.</p>
             </div>
-          )}
+          ) : null}
+
         </div>
       </DialogContent>
     </Dialog>
