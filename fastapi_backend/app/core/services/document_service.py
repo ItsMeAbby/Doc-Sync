@@ -109,14 +109,14 @@ class DocumentService:
                 doc["keywords_array"] = content.get("keywords_array", [])
                 del doc["document_contents"]
         
-        print(f"Total documents fetched: {len(all_docs)}")
+        # print(f"Total documents fetched: {len(all_docs)}")
 
         # Split into groups based on is_api_ref and language
         output = {}
         for lang in settings.languages_list:
             docs = [doc for doc in all_docs if not doc["is_api_ref"] and (doc.get("language") == lang or doc.get("language") is None)]
             refs = [doc for doc in all_docs if doc["is_api_ref"] and (doc.get("language") == lang or doc.get("language") is None)]
-            print(f"Processing {len(docs)} documentation and {len(refs)} API references for language '{lang}'")
+            # print(f"Processing {len(docs)} documentation and {len(refs)} API references for language '{lang}'")
 
             # Sort by name/path
             docs.sort(key=lambda x: x.get("path", "").lower())
@@ -125,7 +125,7 @@ class DocumentService:
                 "documentation": build_tree(docs),
                 "api_references": build_tree(refs)
             }
-            print(f"Processed {len(output[lang]['documentation'])} documentation and {len(output[lang]['api_references'])} API references for language '{lang}'")
+            # print(f"Processed {len(output[lang]['documentation'])} documentation and {len(output[lang]['api_references'])} API references for language '{lang}'")
             
         return output
 

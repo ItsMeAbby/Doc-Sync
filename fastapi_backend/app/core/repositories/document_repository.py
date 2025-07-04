@@ -18,7 +18,7 @@ class DocumentRepository:
 
     @staticmethod
     @performance_monitor("DocumentRepository.get_document_by_id")
-    @cached(ttl=300)  # Cache for 5 minutes
+    # @cached(ttl=300)  # Cache for 5 minutes
     async def get_document_by_id(doc_id: str) -> Dict[str, Any]:
         """Get a document by ID"""
         try:
@@ -85,7 +85,7 @@ class DocumentRepository:
 
     @staticmethod
     @performance_monitor("DocumentRepository.get_all_documents")
-    @cached(ttl=180)  # Cache for 3 minutes
+    # @cached(ttl=180)  # Cache for 3 minutes
     async def get_all_documents(is_deleted: bool = False, is_api_ref: Optional[bool] = None, 
                                parent_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get all documents with optional filters"""
