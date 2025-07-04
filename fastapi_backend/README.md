@@ -1,30 +1,71 @@
 # Doc-Sync FastAPI Backend
 
-This is the backend for the Doc-Sync project, built with FastAPI and Supabase.
+AI-powered documentation management system backend built with FastAPI, OpenAI Agents SDK, and Supabase. Features intelligent content editing, multi-language support, and hierarchical document organization.
 
-## Setup
+## Architecture Overview
 
-1. Clone the repository
-2. Create a virtual environment: `python -m venv .venv`
-3. Activate the virtual environment:
-   - Windows: `.venv\Scripts\activate`
-   - macOS/Linux: `source .venv/bin/activate`
-4. Install dependencies: `pip install -e .`
-5. Copy `.env.example` to `.env` and fill in your Supabase and OpenAI credentials:
-   ```
-   # Supabase
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_KEY=your_supabase_key
-   
-   # OpenAI
-   OPENAI_API_KEY=your_openai_api_key
-   OPENAI_MODEL=gpt-4.1
-   OPENAI_EMBEDDING_MODEL=text-embedding-3-large
-   
-   # DocSync settings
-   VECTOR_DIMENSION=1536
-   LANGUAGES=["en", "ja"]
-   ```
+- **FastAPI 0.115+** - Modern, fast web framework for building APIs
+- **OpenAI Agents SDK** - Multi-agent coordination for intelligent document processing
+- **Supabase** - PostgreSQL database with real-time features and vector support
+- **Pydantic** - Data validation and settings management
+- **Python 3.12** - Latest Python with improved performance
+
+### Key Components
+
+- **Repository Pattern**: Clean separation of data access logic
+- **Service Layer**: Business logic orchestration 
+- **AI Agent System**: Multi-agent coordination using OpenAI Agents SDK
+- **Content Processing**: Automatic summarization, keyword extraction, and embeddings
+
+## Quick Start
+
+### Prerequisites
+- Python 3.12+
+- UV package manager
+- Supabase account
+- OpenAI API key
+
+### Installation
+
+```bash
+# Install UV if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install dependencies
+uv install
+
+# Copy environment file and configure
+cp .env.example .env
+# Edit .env with your credentials
+```
+
+### Environment Configuration
+
+Copy `.env.example` to `.env` and configure:
+
+```bash
+# Frontend URL
+FRONTEND_URL=http://localhost:3000
+
+# CORS settings
+CORS_ORIGINS=["*"]
+
+# OpenAPI documentation
+OPENAPI_URL=/openapi.json
+
+# Supabase credentials
+SUPABASE_URL=your-supabase-url.supabase.co
+SUPABASE_KEY=your-supabase-key
+
+# OpenAI configuration
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_MODEL=gpt-4.1
+OPENAI_EMBEDDING_MODEL=text-embedding-3-large
+
+# Application settings
+VECTOR_DIMENSION=1536
+LANGUAGES=["en", "ja"]
+```
 
 ## Supabase Setup
 
@@ -73,13 +114,58 @@ REFERENCES document_contents(version);
 
 ## Running the Application
 
+### Development Server
+
 ```bash
-uvicorn app.main:app --reload
+# Using UV (recommended)
+uv run uvicorn app.main:app --reload
+
+# Or using the start script
+./start.sh
+
+# Or using Make command from project root
+make start-backend
 ```
+
+### Development Commands
+
+```bash
+# Run tests
+uv run pytest
+
+# Code linting
+uv run ruff check app
+
+# Code formatting
+uv run ruff format app
+
+# Run specific test
+uv run pytest tests/path/to/test_file.py::test_function_name -v
+```
+
+## AI Agent System
+
+The backend implements a sophisticated multi-agent system using the OpenAI Agents SDK:
+
+### Agent Architecture
+
+- **Intent Detection Agent**: Analyzes user queries to determine edit/create/delete intent
+- **Create Agent**: Handles document and content creation workflows
+- **Edit Suggestion Agent**: Manages document modification workflows
+- **Delete Agent**: Handles document deletion operations
+- **MainEditor**: Coordinates multi-agent workflows with concurrent processing
+
+### Content Processing Pipeline
+
+- **Keyword Extraction**: Automatic extraction using OpenAI API
+- **Summarization**: Content summaries with language detection
+- **URL Extraction**: Parse and extract URLs from markdown content
+- **Embeddings**: Generate semantic search vectors using text-embedding-3-large
+- **Tree Building**: Construct hierarchical document relationships
 
 ## API Endpoints
 
-Note: The API base path is `/api/documents/` (not just `/documents/`)
+### Documents API (`/api/documents`)
 
 | Method | Endpoint                                    | Description                                                        |
 | ------ | ------------------------------------------- | -------------------------------------------------------------------|
@@ -95,6 +181,13 @@ Note: The API base path is `/api/documents/` (not just `/documents/`)
 | `GET`  | `/api/documents/`                           | Get all documents with complete hierarchy (with optional filters)  |
 | `PUT`  | `/api/documents/{doc_id}`                   | Update document metadata (title, path, etc.) or delete it          |
 | `POST` | `/api/documents/{doc_id}/versions`          | Create a new version for a document (and update latest version)    |
+
+### Edit Documentation API (`/api/edit`)
+
+| Method | Endpoint                           | Description                                    |
+| ------ | ---------------------------------- | ---------------------------------------------- |
+| `POST` | `/api/edit/`                       | AI-powered documentation editing              |
+| `POST` | `/api/edit/update_documentation`   | Apply suggested changes                        |
 
 ## Document Creation
 
