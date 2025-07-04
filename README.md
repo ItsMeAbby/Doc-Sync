@@ -166,8 +166,6 @@ cd nextjs-frontend && pnpm run tsc
 # Code formatting
 cd nextjs-frontend && pnpm run prettier
 
-# Generate API client
-cd nextjs-frontend && pnpm run generate-client
 ```
 
 ## Architecture Overview
