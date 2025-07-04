@@ -27,7 +27,6 @@ export interface DocumentToDelete {
   version: string;
   title: string;
   path: string;
-
 }
 export interface EditDocumentationResponse {
   edit?: DocumentEdit[];

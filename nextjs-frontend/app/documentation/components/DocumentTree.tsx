@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { ChevronRight, ChevronDown, File, Folder, Search } from 'lucide-react';
-import { DocumentNode } from '../types';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
+import React, { useState } from "react";
+import { ChevronRight, ChevronDown, File, Folder, Search } from "lucide-react";
+import { DocumentNode } from "../types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
 
 interface DocumentTreeProps {
   documents: DocumentNode[];
@@ -20,10 +20,12 @@ const DocumentTreeNode: React.FC<{
   level: number;
   searchTerm?: string;
 }> = ({ document, onSelectDocument, selectedDocument, level, searchTerm }) => {
-  const [isExpanded, setIsExpanded] = useState(level === 0 || Boolean(searchTerm));
+  const [isExpanded, setIsExpanded] = useState(
+    level === 0 || Boolean(searchTerm),
+  );
   const hasChildren = document.children && document.children.length > 0;
   const isSelected = selectedDocument?.id === document.id;
-  
+
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExpanded(!isExpanded);
@@ -34,32 +36,51 @@ const DocumentTreeNode: React.FC<{
   };
 
   // Use name field for display, fallback to title if name is not available
-  const displayName = document.name || document.title || '';
-  const displayTitle = searchTerm && displayName.toLowerCase().includes(searchTerm.toLowerCase()) ? (
-    <span>
-      {displayName.split(new RegExp(`(${searchTerm})`, 'gi')).map((part, i) => 
-        part.toLowerCase() === searchTerm.toLowerCase() ? 
-          <span key={i} className="bg-yellow-200 dark:bg-yellow-800">{part}</span> : part
-      )}
-    </span>
-  ) : (
-    <span className="truncate">{displayName}</span>
-  );
+  const displayName = document.name || document.title || "";
+  const displayTitle =
+    searchTerm &&
+    displayName.toLowerCase().includes(searchTerm.toLowerCase()) ? (
+      <span>
+        {displayName
+          .split(new RegExp(`(${searchTerm})`, "gi"))
+          .map((part, i) =>
+            part.toLowerCase() === searchTerm.toLowerCase() ? (
+              <span key={i} className="bg-yellow-200 dark:bg-yellow-800">
+                {part}
+              </span>
+            ) : (
+              part
+            ),
+          )}
+      </span>
+    ) : (
+      <span className="truncate">{displayName}</span>
+    );
 
   return (
     <div className="select-none">
-      <div 
+      <div
         className={`flex items-center py-2 sm:py-1.5 px-2 rounded-md text-xs sm:text-sm ${
-          hasChildren 
-            ? 'cursor-default' 
-            : 'cursor-pointer ' + (isSelected ? 'bg-primary text-primary-foreground' : 'hover:bg-muted')
+          hasChildren
+            ? "cursor-default"
+            : "cursor-pointer " +
+              (isSelected
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-muted")
         }`}
         style={{ paddingLeft: `${level * 8 + 4}px` }}
         onClick={hasChildren ? handleToggle : handleSelect}
       >
         {hasChildren ? (
-          <span className="mr-1.5 sm:mr-1 cursor-pointer" onClick={handleToggle}>
-            {isExpanded ? <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" /> : <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />}
+          <span
+            className="mr-1.5 sm:mr-1 cursor-pointer"
+            onClick={handleToggle}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />
+            ) : (
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+            )}
           </span>
         ) : (
           <span className="mr-1.5 sm:mr-1">
@@ -67,7 +88,9 @@ const DocumentTreeNode: React.FC<{
           </span>
         )}
         {hasChildren ? (
-          <span className="font-medium text-gray-700 dark:text-gray-300">{displayTitle}</span>
+          <span className="font-medium text-gray-700 dark:text-gray-300">
+            {displayTitle}
+          </span>
         ) : (
           displayTitle
         )}
@@ -91,8 +114,13 @@ const DocumentTreeNode: React.FC<{
   );
 };
 
-const DocumentTree: React.FC<DocumentTreeProps> = ({ documents, onSelectDocument, selectedDocument, isLoading = false }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+const DocumentTree: React.FC<DocumentTreeProps> = ({
+  documents,
+  onSelectDocument,
+  selectedDocument,
+  isLoading = false,
+}) => {
+  const [searchTerm, setSearchTerm] = useState("");
 
   return (
     <div className="flex flex-col h-full">
@@ -108,13 +136,15 @@ const DocumentTree: React.FC<DocumentTreeProps> = ({ documents, onSelectDocument
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
-      
+
       <div className="max-h-[calc(100vh-250px)] sm:max-h-[calc(100vh-200px)] overflow-y-auto pb-2 -mx-1 px-1">
         {isLoading ? (
           <div className="space-y-2 p-2">
             <div className="flex items-center space-x-2 mb-3">
               <Spinner size="sm" />
-              <span className="text-sm text-gray-500">Loading documents...</span>
+              <span className="text-sm text-gray-500">
+                Loading documents...
+              </span>
             </div>
             <Skeleton className="h-6 w-full" />
             <Skeleton className="h-6 w-11/12 ml-4" />
@@ -129,13 +159,13 @@ const DocumentTree: React.FC<DocumentTreeProps> = ({ documents, onSelectDocument
               // Sort by: children first (files), then parents (folders) at bottom
               const aHasChildren = a.children && a.children.length > 0;
               const bHasChildren = b.children && b.children.length > 0;
-              
+
               if (aHasChildren && !bHasChildren) return 1; // a is folder, b is file -> a goes after b
               if (!aHasChildren && bHasChildren) return -1; // a is file, b is folder -> a goes before b
-              
+
               // If both are same type, sort alphabetically
-              const aName = a.name || a.title || '';
-              const bName = b.name || b.title || '';
+              const aName = a.name || a.title || "";
+              const bName = b.name || b.title || "";
               return aName.localeCompare(bName);
             })
             .map((doc) => (

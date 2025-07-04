@@ -7,21 +7,27 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { 
-  FileEdit, 
-  FilePlus, 
+import {
+  FileEdit,
+  FilePlus,
   FileX,
-  Check, 
-  X, 
+  Check,
+  X,
   ChevronDown,
   ChevronRight,
   Code,
   Eye,
   FileText,
-  Folder
+  Folder,
 } from "lucide-react";
 import { DiffViewer } from "./DiffViewer";
-import type { DocumentEdit, GeneratedDocument, DocumentToDelete, ContentChange, OriginalContent } from "@/lib/edit-types";
+import type {
+  DocumentEdit,
+  GeneratedDocument,
+  DocumentToDelete,
+  ContentChange,
+  OriginalContent,
+} from "@/lib/edit-types";
 
 interface DocumentChangeCardProps {
   change: DocumentEdit | GeneratedDocument | DocumentToDelete;
@@ -47,7 +53,9 @@ export function DocumentChangeCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [viewMode, setViewMode] = useState<"inline" | "split">("split");
   const [showIndividualChanges, setShowIndividualChanges] = useState(false);
-  const [individualChangesExpanded, setIndividualChangesExpanded] = useState<{[key: number]: boolean}>({});
+  const [individualChangesExpanded, setIndividualChangesExpanded] = useState<{
+    [key: number]: boolean;
+  }>({});
 
   const isEdit = type === "edit";
   const isCreate = type === "create";
@@ -84,14 +92,13 @@ export function DocumentChangeCard({
   };
 
   const applyChangesToContent = (content: string, changes: ContentChange[]) => {
-    
     // Handle undefined or empty content
     if (!content) {
-      return '';
+      return "";
     }
-    
+
     let modifiedContent = content;
-    
+
     // Apply changes in reverse order to avoid index shifting
     const sortedChanges = [...changes].sort((a, b) => {
       const indexA = content.lastIndexOf(a.old_string);
@@ -100,16 +107,19 @@ export function DocumentChangeCard({
     });
 
     sortedChanges.forEach((change) => {
-      modifiedContent = modifiedContent.replace(change.old_string, change.new_string);
+      modifiedContent = modifiedContent.replace(
+        change.old_string,
+        change.new_string,
+      );
     });
 
     return modifiedContent;
   };
 
   const toggleIndividualChange = (index: number) => {
-    setIndividualChangesExpanded(prev => ({
+    setIndividualChangesExpanded((prev) => ({
       ...prev,
-      [index]: !prev[index]
+      [index]: !prev[index],
     }));
   };
 
@@ -153,11 +163,17 @@ export function DocumentChangeCard({
                 </div>
               </div>
               <div className="flex flex-wrap gap-1 ml-10">
-                <Badge variant={isEdit ? "secondary" : isCreate ? "default" : "destructive"} className="text-xs px-1.5 py-0.5">
+                <Badge
+                  variant={
+                    isEdit ? "secondary" : isCreate ? "default" : "destructive"
+                  }
+                  className="text-xs px-1.5 py-0.5"
+                >
                   {isEdit ? "Edit" : isCreate ? "Create" : "Delete"}
                 </Badge>
                 <Badge variant="outline" className="text-xs px-1.5 py-0.5">
-                  {getChangeCount()} {getChangeCount() === 1 ? "change" : "changes"}
+                  {getChangeCount()}{" "}
+                  {getChangeCount() === 1 ? "change" : "changes"}
                 </Badge>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground ml-10">
@@ -224,11 +240,20 @@ export function DocumentChangeCard({
                   {getTitle()}
                 </CardTitle>
                 <div className="flex gap-1 flex-shrink-0">
-                  <Badge variant={isEdit ? "secondary" : isCreate ? "default" : "destructive"}>
+                  <Badge
+                    variant={
+                      isEdit
+                        ? "secondary"
+                        : isCreate
+                          ? "default"
+                          : "destructive"
+                    }
+                  >
                     {isEdit ? "Edit" : isCreate ? "Create" : "Delete"}
                   </Badge>
                   <Badge variant="outline">
-                    {getChangeCount()} {getChangeCount() === 1 ? "change" : "changes"}
+                    {getChangeCount()}{" "}
+                    {getChangeCount() === 1 ? "change" : "changes"}
                   </Badge>
                 </div>
               </div>
@@ -269,8 +294,11 @@ export function DocumentChangeCard({
             <div className="border rounded-lg overflow-hidden">
               {isEdit ? (
                 <DiffViewer
-                  oldContent={originalContent?.markdown_content || ''}
-                  newContent={applyChangesToContent(originalContent?.markdown_content || '', editChange.changes)}
+                  oldContent={originalContent?.markdown_content || ""}
+                  newContent={applyChangesToContent(
+                    originalContent?.markdown_content || "",
+                    editChange.changes,
+                  )}
                   viewMode={viewMode}
                   className="p-4"
                 />
@@ -306,14 +334,23 @@ export function DocumentChangeCard({
                     </h4>
                   </div>
                   <div className="space-y-2 text-sm">
-                    <div><strong>Document ID:</strong> {deleteChange.document_id}</div>
-                    <div><strong>Title:</strong> {deleteChange.title}</div>
-                    <div><strong>Path:</strong> {deleteChange.path}</div>
-                    <div><strong>Version:</strong> {deleteChange.version}</div>
+                    <div>
+                      <strong>Document ID:</strong> {deleteChange.document_id}
+                    </div>
+                    <div>
+                      <strong>Title:</strong> {deleteChange.title}
+                    </div>
+                    <div>
+                      <strong>Path:</strong> {deleteChange.path}
+                    </div>
+                    <div>
+                      <strong>Version:</strong> {deleteChange.version}
+                    </div>
                   </div>
                   <div className="mt-3 p-3 bg-red-100 dark:bg-red-900/30 rounded border border-red-200 dark:border-red-800">
                     <p className="text-red-700 dark:text-red-400 text-sm font-medium">
-                      ⚠️ Warning: This document will be permanently deleted and cannot be recovered.
+                      ⚠️ Warning: This document will be permanently deleted and
+                      cannot be recovered.
                     </p>
                   </div>
                 </div>
@@ -327,7 +364,9 @@ export function DocumentChangeCard({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowIndividualChanges(!showIndividualChanges)}
+                    onClick={() =>
+                      setShowIndividualChanges(!showIndividualChanges)
+                    }
                     className="text-xs gap-1"
                   >
                     {showIndividualChanges ? (
@@ -343,43 +382,48 @@ export function DocumentChangeCard({
                     )}
                   </Button>
                 </div>
-                
+
                 {showIndividualChanges && (
                   <div className="space-y-3">
-                    {editChange.changes.map((change: ContentChange, index: number) => (
-                      <div key={index} className="border rounded-lg overflow-hidden">
-                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border-b">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">
-                              Change {index + 1}
-                            </Badge>
+                    {editChange.changes.map(
+                      (change: ContentChange, index: number) => (
+                        <div
+                          key={index}
+                          className="border rounded-lg overflow-hidden"
+                        >
+                          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border-b">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                Change {index + 1}
+                              </Badge>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleIndividualChange(index)}
+                              className="p-1 h-auto"
+                            >
+                              {individualChangesExpanded[index] ? (
+                                <ChevronDown className="h-3 w-3" />
+                              ) : (
+                                <ChevronRight className="h-3 w-3" />
+                              )}
+                            </Button>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleIndividualChange(index)}
-                            className="p-1 h-auto"
-                          >
-                            {individualChangesExpanded[index] ? (
-                              <ChevronDown className="h-3 w-3" />
-                            ) : (
-                              <ChevronRight className="h-3 w-3" />
-                            )}
-                          </Button>
+
+                          {individualChangesExpanded[index] && (
+                            <div className="p-3">
+                              <DiffViewer
+                                oldContent={change.old_string}
+                                newContent={change.new_string}
+                                viewMode="split"
+                                enableMarkdown={true}
+                              />
+                            </div>
+                          )}
                         </div>
-                        
-                        {individualChangesExpanded[index] && (
-                          <div className="p-3">
-                            <DiffViewer
-                              oldContent={change.old_string}
-                              newContent={change.new_string}
-                              viewMode="split"
-                              enableMarkdown={true}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      ),
+                    )}
                   </div>
                 )}
               </div>

@@ -15,19 +15,19 @@ export interface DocumentNode {
 }
 
 export interface DocumentVersion {
-  version: string;                    // UUID
-  document_id: string;               // UUID  
-  markdown_content: string;          // Content
-  language?: string;                 // Language code
-  keywords_array?: string[];         // Auto-generated keywords
-  urls_array?: string[];            // Auto-extracted URLs  
-  summary?: string;                  // Auto-generated summary
-  created_at: string;               // ISO timestamp
-  updated_at: string;               // ISO timestamp
-  name?: string;                    // From document metadata
-  path?: string;                    // From document metadata
-  title?: string;                   // From document metadata
-  latest?: boolean;                 // Flag to indicate if this is the current/latest version
+  version: string; // UUID
+  document_id: string; // UUID
+  markdown_content: string; // Content
+  language?: string; // Language code
+  keywords_array?: string[]; // Auto-generated keywords
+  urls_array?: string[]; // Auto-extracted URLs
+  summary?: string; // Auto-generated summary
+  created_at: string; // ISO timestamp
+  updated_at: string; // ISO timestamp
+  name?: string; // From document metadata
+  path?: string; // From document metadata
+  title?: string; // From document metadata
+  latest?: boolean; // Flag to indicate if this is the current/latest version
 }
 
 export interface GetAllDocumentsResponse {

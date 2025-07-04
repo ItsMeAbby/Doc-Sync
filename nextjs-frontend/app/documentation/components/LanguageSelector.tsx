@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
+import React from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface LanguageSelectorProps {
   languages: string[];
@@ -15,10 +15,10 @@ interface LanguageSelectorProps {
   onLanguageChange: (language: string) => void;
 }
 
-const LanguageSelector: React.FC<LanguageSelectorProps> = ({ 
-  languages, 
-  selectedLanguage, 
-  onLanguageChange 
+const LanguageSelector: React.FC<LanguageSelectorProps> = ({
+  languages,
+  selectedLanguage,
+  onLanguageChange,
 }) => {
   const handleValueChange = (value: string) => {
     onLanguageChange(value);
@@ -26,17 +26,20 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   const getLanguageDisplay = (code: string): string => {
     const languageMap: Record<string, string> = {
-      'en': 'English',
-      'ja': 'Japanese',
+      en: "English",
+      ja: "Japanese",
       // Add more languages as needed
     };
-    
+
     return languageMap[code] || code;
   };
 
   return (
     <div className="flex items-center space-x-2 w-full sm:w-auto">
-      <label htmlFor="language-select" className="text-sm font-medium hidden sm:inline">
+      <label
+        htmlFor="language-select"
+        className="text-sm font-medium hidden sm:inline"
+      >
         Language:
       </label>
       <Select value={selectedLanguage} onValueChange={handleValueChange}>

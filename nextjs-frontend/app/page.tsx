@@ -15,28 +15,41 @@ export default function Home() {
         </p>
 
         <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md mb-6 sm:mb-8">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">How it works</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">
+            How it works
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="p-4 flex flex-col items-center">
               <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-full mb-3">
                 <FaLightbulb className="w-6 h-6 text-blue-600 dark:text-blue-300" />
               </div>
               <h3 className="font-medium text-lg mb-2">1. Describe Changes</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-center">Enter a natural language description of your product update or documentation change</p>
+              <p className="text-gray-600 dark:text-gray-400 text-center">
+                Enter a natural language description of your product update or
+                documentation change
+              </p>
             </Card>
             <Card className="p-4 flex flex-col items-center">
               <div className="bg-green-100 dark:bg-green-900 p-3 rounded-full mb-3">
                 <FaBook className="w-6 h-6 text-green-600 dark:text-green-300" />
               </div>
-              <h3 className="font-medium text-lg mb-2">2. Review Suggestions</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-center">AI identifies affected documentation and suggests updates based on your changes</p>
+              <h3 className="font-medium text-lg mb-2">
+                2. Review Suggestions
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-center">
+                AI identifies affected documentation and suggests updates based
+                on your changes
+              </p>
             </Card>
             <Card className="p-4 flex flex-col items-center">
               <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-full mb-3">
                 <FaEdit className="w-6 h-6 text-purple-600 dark:text-purple-300" />
               </div>
               <h3 className="font-medium text-lg mb-2">3. Approve & Save</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-center">Review, edit, and approve the suggested changes before they're applied</p>
+              <p className="text-gray-600 dark:text-gray-400 text-center">
+                Review, edit, and approve the suggested changes before they're
+                applied
+              </p>
             </Card>
           </div>
         </div>

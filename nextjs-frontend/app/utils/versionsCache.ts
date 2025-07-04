@@ -1,4 +1,4 @@
-import { DocumentVersion } from '@/app/documentation/types';
+import { DocumentVersion } from "@/app/documentation/types";
 
 interface CacheEntry<T> {
   data: T;
@@ -10,7 +10,11 @@ class VersionsCache {
   private cache: Map<string, CacheEntry<DocumentVersion[]>> = new Map();
   private readonly defaultTTL = 5 * 60 * 1000; // 5 minutes
 
-  set(key: string, data: DocumentVersion[], ttl: number = this.defaultTTL): void {
+  set(
+    key: string,
+    data: DocumentVersion[],
+    ttl: number = this.defaultTTL,
+  ): void {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -47,7 +51,11 @@ class VersionsCache {
     return this.get(this.generateKey(documentId));
   }
 
-  setVersions(documentId: string, versions: DocumentVersion[], ttl?: number): void {
+  setVersions(
+    documentId: string,
+    versions: DocumentVersion[],
+    ttl?: number,
+  ): void {
     this.set(this.generateKey(documentId), versions, ttl);
   }
 
@@ -60,7 +68,7 @@ export const versionsCache = new VersionsCache();
 
 export const fetchDocumentVersionsWithCache = async (
   documentId: string,
-  apiBaseUrl: string
+  apiBaseUrl: string,
 ): Promise<DocumentVersion[]> => {
   // Check cache first
   const cached = versionsCache.getVersions(documentId);
@@ -69,15 +77,19 @@ export const fetchDocumentVersionsWithCache = async (
   }
 
   // Fetch from API
-  const response = await fetch(`${apiBaseUrl}/api/documents/${documentId}/versions`);
+  const response = await fetch(
+    `${apiBaseUrl}/api/documents/${documentId}/versions`,
+  );
   if (!response.ok) {
-    throw new Error(`Failed to fetch document versions: ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch document versions: ${response.statusText}`,
+    );
   }
 
   const versions: DocumentVersion[] = await response.json();
-  
+
   // Cache the result
   versionsCache.setVersions(documentId, versions);
-  
+
   return versions;
 };

@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import ReactMarkdown from 'react-markdown';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeRaw from 'rehype-raw';
-import remarkGfm from 'remark-gfm';
+import ReactMarkdown from "react-markdown";
+import rehypeHighlight from "rehype-highlight";
+import rehypeRaw from "rehype-raw";
+import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import { diffChars, diffWords, diffLines } from "diff";
 import { Button } from "@/components/ui/button";
@@ -26,9 +26,16 @@ export function DiffViewer({
   enableMarkdown = true,
 }: DiffViewerProps) {
   const [renderMode, setRenderMode] = useState<"raw" | "markdown">("raw");
-  const differences = diffLines(oldContent, newContent, { ignoreWhitespace: false });
+  const differences = diffLines(oldContent, newContent, {
+    ignoreWhitespace: false,
+  });
 
-  const showMarkdownToggle = enableMarkdown && (oldContent.includes('#') || newContent.includes('#') || oldContent.includes('```') || newContent.includes('```'));
+  const showMarkdownToggle =
+    enableMarkdown &&
+    (oldContent.includes("#") ||
+      newContent.includes("#") ||
+      oldContent.includes("```") ||
+      newContent.includes("```"));
 
   if (viewMode === "split") {
     return (
@@ -93,30 +100,44 @@ export function DiffViewer({
   );
 }
 
-function MarkdownContent({ content, className, changes }: { content: string; className?: string; changes?: any[] }) {
+function MarkdownContent({
+  content,
+  className,
+  changes,
+}: {
+  content: string;
+  className?: string;
+  changes?: any[];
+}) {
   // If we have changes, try to highlight the specific changed parts
   if (changes && changes.length > 0) {
     let highlightedContent = content;
-    
+
     // Apply highlighting to changed sections
     changes.forEach((change, index) => {
       if (change.added) {
         // Wrap added content with highlighting spans
-        const escapedOldString = change.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedOldString = change.value.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          "\\$&",
+        );
         highlightedContent = highlightedContent.replace(
-          new RegExp(escapedOldString, 'g'),
-          `<mark class="bg-green-200 dark:bg-green-800/50 text-green-900 dark:text-green-100">${change.value}</mark>`
+          new RegExp(escapedOldString, "g"),
+          `<mark class="bg-green-200 dark:bg-green-800/50 text-green-900 dark:text-green-100">${change.value}</mark>`,
         );
       } else if (change.removed) {
         // For removed content, we'll show it with strikethrough in the original
-        const escapedOldString = change.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedOldString = change.value.replace(
+          /[.*+?^${}()|[\]\\]/g,
+          "\\$&",
+        );
         highlightedContent = highlightedContent.replace(
-          new RegExp(escapedOldString, 'g'),
-          `<mark class="bg-red-200 dark:bg-red-800/50 text-red-900 dark:text-red-100 line-through">${change.value}</mark>`
+          new RegExp(escapedOldString, "g"),
+          `<mark class="bg-red-200 dark:bg-red-800/50 text-red-900 dark:text-red-100 line-through">${change.value}</mark>`,
         );
       }
     });
-    
+
     return (
       <div className={className}>
         <ReactMarkdown
@@ -143,13 +164,19 @@ function MarkdownContent({ content, className, changes }: { content: string; cla
   );
 }
 
-function InlineDiffView({ differences, renderMode }: { differences: any; renderMode: string }) {
+function InlineDiffView({
+  differences,
+  renderMode,
+}: {
+  differences: any;
+  renderMode: string;
+}) {
   if (renderMode === "markdown") {
     // Create a unified view showing changes inline
-    let unifiedContent = '';
+    let unifiedContent = "";
     const addedParts: string[] = [];
     const removedParts: string[] = [];
-    
+
     differences.forEach((part: any) => {
       if (part.added) {
         addedParts.push(part.value);
@@ -192,57 +219,87 @@ function InlineDiffView({ differences, renderMode }: { differences: any; renderM
   return (
     <div className="font-mono text-sm overflow-x-auto">
       <div className="min-w-0">
-        {differences.map((part: any, index: number) => {
-          const lines = part.value.split('\n').filter((line: string, i: number, arr: string[]) => 
-            i < arr.length - 1 || line.length > 0
-          );
-          
-          return lines.map((line: string, lineIndex: number) => {
-            const key = `${index}-${lineIndex}`;
-            
-            if (part.added) {
+        {differences
+          .map((part: any, index: number) => {
+            const lines = part.value
+              .split("\n")
+              .filter(
+                (line: string, i: number, arr: string[]) =>
+                  i < arr.length - 1 || line.length > 0,
+              );
+
+            return lines.map((line: string, lineIndex: number) => {
+              const key = `${index}-${lineIndex}`;
+
+              if (part.added) {
+                return (
+                  <div
+                    key={key}
+                    className="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500"
+                  >
+                    <span className="text-green-600 dark:text-green-400 px-2">
+                      +
+                    </span>
+                    <span className="text-green-700 dark:text-green-300">
+                      {line}
+                    </span>
+                  </div>
+                );
+              }
+
+              if (part.removed) {
+                return (
+                  <div
+                    key={key}
+                    className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500"
+                  >
+                    <span className="text-red-600 dark:text-red-400 px-2">
+                      -
+                    </span>
+                    <span className="text-red-700 dark:text-red-300">
+                      {line}
+                    </span>
+                  </div>
+                );
+              }
+
               return (
-                <div key={key} className="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500">
-                  <span className="text-green-600 dark:text-green-400 px-2">+</span>
-                  <span className="text-green-700 dark:text-green-300">{line}</span>
+                <div
+                  key={key}
+                  className="bg-gray-50 dark:bg-gray-800 border-l-4 border-transparent"
+                >
+                  <span className="text-gray-400 px-2"> </span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    {line}
+                  </span>
                 </div>
               );
-            }
-            
-            if (part.removed) {
-              return (
-                <div key={key} className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500">
-                  <span className="text-red-600 dark:text-red-400 px-2">-</span>
-                  <span className="text-red-700 dark:text-red-300">{line}</span>
-                </div>
-              );
-            }
-            
-            return (
-              <div key={key} className="bg-gray-50 dark:bg-gray-800 border-l-4 border-transparent">
-                <span className="text-gray-400 px-2"> </span>
-                <span className="text-gray-700 dark:text-gray-300">{line}</span>
-              </div>
-            );
-          });
-        }).flat()}
+            });
+          })
+          .flat()}
       </div>
     </div>
   );
 }
 
-function SplitDiffView({ differences, renderMode }: { differences: any; renderMode: string }) {
+function SplitDiffView({
+  differences,
+  renderMode,
+}: {
+  differences: any;
+  renderMode: string;
+}) {
   if (renderMode === "markdown") {
     // For markdown view, show before and after side by side with highlighting
     const oldContent = differences
       .filter((part: any) => !part.added)
       .map((part: any) => part.value)
-      .join('');
-    
+      .join("");
+
     const newContent = differences
       .filter((part: any) => !part.removed)
       .map((part: any) => part.value)
-      .join('');
+      .join("");
 
     // Create highlighted versions
     let highlightedOldContent = oldContent;
@@ -250,17 +307,17 @@ function SplitDiffView({ differences, renderMode }: { differences: any; renderMo
 
     differences.forEach((part: any) => {
       if (part.removed && highlightedOldContent.includes(part.value)) {
-        const escapedValue = part.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedValue = part.value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         highlightedOldContent = highlightedOldContent.replace(
-          new RegExp(escapedValue, 'g'),
-          `<mark class="bg-red-200 dark:bg-red-800/50 text-red-900 dark:text-red-100 px-1 rounded">${part.value}</mark>`
+          new RegExp(escapedValue, "g"),
+          `<mark class="bg-red-200 dark:bg-red-800/50 text-red-900 dark:text-red-100 px-1 rounded">${part.value}</mark>`,
         );
       }
       if (part.added && highlightedNewContent.includes(part.value)) {
-        const escapedValue = part.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const escapedValue = part.value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         highlightedNewContent = highlightedNewContent.replace(
-          new RegExp(escapedValue, 'g'),
-          `<mark class="bg-green-200 dark:bg-green-800/50 text-green-900 dark:text-green-100 px-1 rounded">${part.value}</mark>`
+          new RegExp(escapedValue, "g"),
+          `<mark class="bg-green-200 dark:bg-green-800/50 text-green-900 dark:text-green-100 px-1 rounded">${part.value}</mark>`,
         );
       }
     });
@@ -308,13 +365,22 @@ function SplitDiffView({ differences, renderMode }: { differences: any; renderMo
   }
 
   // Raw view - show line by line diff
-  const oldLines: { text: string; type: "removed" | "unchanged" | "placeholder" }[] = [];
-  const newLines: { text: string; type: "added" | "unchanged" | "placeholder" }[] = [];
+  const oldLines: {
+    text: string;
+    type: "removed" | "unchanged" | "placeholder";
+  }[] = [];
+  const newLines: {
+    text: string;
+    type: "added" | "unchanged" | "placeholder";
+  }[] = [];
 
   differences.forEach((part: any) => {
-    const lines = part.value.split('\n').filter((line: string, i: number, arr: string[]) => 
-      i < arr.length - 1 || line.length > 0
-    );
+    const lines = part.value
+      .split("\n")
+      .filter(
+        (line: string, i: number, arr: string[]) =>
+          i < arr.length - 1 || line.length > 0,
+      );
 
     if (part.removed) {
       lines.forEach((line: string) => {
@@ -349,8 +415,8 @@ function SplitDiffView({ differences, renderMode }: { differences: any; renderMo
                 line.type === "removed"
                   ? "bg-red-50 dark:bg-red-900/20 border-red-500 text-red-700 dark:text-red-300"
                   : line.type === "placeholder"
-                  ? "bg-gray-100 dark:bg-gray-900 border-transparent"
-                  : "bg-gray-50 dark:bg-gray-800 border-transparent text-gray-700 dark:text-gray-300"
+                    ? "bg-gray-100 dark:bg-gray-900 border-transparent"
+                    : "bg-gray-50 dark:bg-gray-800 border-transparent text-gray-700 dark:text-gray-300",
               )}
             >
               {line.text || "\u00A0"}
@@ -369,8 +435,8 @@ function SplitDiffView({ differences, renderMode }: { differences: any; renderMo
                 line.type === "added"
                   ? "bg-green-50 dark:bg-green-900/20 border-green-500 text-green-700 dark:text-green-300"
                   : line.type === "placeholder"
-                  ? "bg-gray-100 dark:bg-gray-900 border-transparent"
-                  : "bg-gray-50 dark:bg-gray-800 border-transparent text-gray-700 dark:text-gray-300"
+                    ? "bg-gray-100 dark:bg-gray-900 border-transparent"
+                    : "bg-gray-50 dark:bg-gray-800 border-transparent text-gray-700 dark:text-gray-300",
               )}
             >
               {line.text || "\u00A0"}

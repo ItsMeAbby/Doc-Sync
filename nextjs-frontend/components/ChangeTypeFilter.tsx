@@ -4,13 +4,13 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { 
-  FileEdit, 
-  FilePlus, 
+import {
+  FileEdit,
+  FilePlus,
   FileX,
   CheckCircle2,
   XCircle,
-  Filter
+  Filter,
 } from "lucide-react";
 
 export type ChangeType = "edit" | "create" | "delete" | "all";
@@ -111,7 +111,7 @@ export function ChangeTypeFilter({
               {selectedCount} selected
             </div>
           )}
-          
+
           <div className="flex gap-1">
             <Button
               variant="ghost"
@@ -132,7 +132,7 @@ export function ChangeTypeFilter({
               Deselect All
             </Button>
           </div>
-          
+
           <div className="flex gap-1">
             <Button
               variant="default"
@@ -223,7 +223,7 @@ export function ChangeTypeFilter({
               {selectedCount} selected
             </span>
           )}
-          
+
           <div className="flex gap-1">
             <Button
               variant="ghost"
@@ -244,7 +244,7 @@ export function ChangeTypeFilter({
               Deselect All
             </Button>
           </div>
-          
+
           <div className="flex gap-1">
             <Button
               variant="default"
