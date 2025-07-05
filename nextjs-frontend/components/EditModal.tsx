@@ -143,14 +143,20 @@ export default function EditModal({ isOpen, onClose, content, onSave, documentId
     
     setEditedContent(newContent);
     
+    // Calculate new cursor position (end of the inserted text)
+    const newCursorPosition = selection.selectionStart + inlineEditResponse.edited_text.length;
+    
     // Reset states
     setSelection(prev => ({ ...prev, show: false }));
     setInlineEditResponse(null);
     setQuery("");
     
-    // Focus back to textarea
+    // Focus back to textarea and set cursor position
     setTimeout(() => {
-      textareaRef.current?.focus();
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newCursorPosition, newCursorPosition);
+      }
     }, 100);
   };
 
