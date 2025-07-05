@@ -11,6 +11,43 @@ class EditDocumentationRequest(BaseModel):
     query: str
     document_id: Optional[str] = None
 
+class InLineEditRequest(BaseModel):
+    """
+    Represents a request to perform inline edits on documentation.
+    This is used to update the documentation based on the changes suggested by the editor.
+    """
+
+    query: str = Field(
+        ...,
+        description="The query or instruction for editing the documentation.",
+    )
+    selected_text: str = Field(
+        ...,
+        description="The text that has been selected for inline editing.",
+    )
+
+class InLineEditResponse(BaseModel):
+    """
+    Represents the response for inline edit requests.
+    Contains the original text, edited text, and a message indicating success or failure.
+    """
+
+    query: str = Field(
+        ...,
+        description="The query or instruction for editing the documentation.",
+    )
+    original_text: str = Field(
+        ...,
+        description="The original text that was selected for inline editing.",
+    )
+    edited_text: str = Field(
+        ...,
+        description="The text after inline edits have been applied.",
+    )
+    message: str = Field(
+        default="Inline edit processed successfully.",
+        description="Message indicating the result of the inline edit operation.",
+    )
 
 class EditDocumentationResponse(BaseModel):
     edit: Optional[List[DocumentEdit]] = Field(

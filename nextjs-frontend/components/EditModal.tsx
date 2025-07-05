@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import * as Popover from "@radix-ui/react-popover";
-import { Save, X } from "lucide-react";
+import { Save, X, Check, X as XIcon, Loader2 } from "lucide-react";
 
 interface EditModalProps {
   isOpen: boolean;
@@ -20,8 +20,15 @@ interface EditModalProps {
 interface SelectionData {
   selectedText: string;
   show: boolean;
-  x: number;
-  y: number;
+  selectionStart: number;
+  selectionEnd: number;
+}
+
+interface InlineEditResponse {
+  query: string;
+  original_text: string;
+  edited_text: string;
+  message: string;
 }
 
 export default function EditModal({ isOpen, onClose, content, onSave, documentId, onDocumentUpdated }: EditModalProps) {
@@ -29,13 +36,15 @@ export default function EditModal({ isOpen, onClose, content, onSave, documentId
   const [selection, setSelection] = useState<SelectionData>({
     selectedText: "",
     show: false,
-    x: 0,
-    y: 0,
+    selectionStart: 0,
+    selectionEnd: 0,
   });
   const [query, setQuery] = useState("");
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [inlineEditResponse, setInlineEditResponse] = useState<InlineEditResponse | null>(null);
+  const [isLoadingInlineEdit, setIsLoadingInlineEdit] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const hasUnsavedChanges = editedContent !== content;
@@ -48,11 +57,13 @@ export default function EditModal({ isOpen, onClose, content, onSave, documentId
     if (isOpen) {
       // Reset all states when modal opens
       setEditedContent(content);
-      setSelection({ selectedText: "", show: false, x: 0, y: 0 });
+      setSelection({ selectedText: "", show: false, selectionStart: 0, selectionEnd: 0 });
       setQuery("");
       setShowSaveConfirmation(false);
       setShowUnsavedWarning(false);
       setIsSaving(false);
+      setInlineEditResponse(null);
+      setIsLoadingInlineEdit(false);
     }
   }, [isOpen, content]);
 
@@ -62,58 +73,6 @@ export default function EditModal({ isOpen, onClose, content, onSave, documentId
     }
   }, [isOpen]);
 
-  const getTextareaCaretPosition = (textarea: HTMLTextAreaElement, caretPos: number) => {
-    // Create a dummy div to measure text position more accurately
-    const div = document.createElement('div');
-    const style = getComputedStyle(textarea);
-    
-    // Copy all relevant styles exactly
-    div.style.position = 'absolute';
-    div.style.visibility = 'hidden';
-    div.style.height = 'auto';
-    div.style.width = textarea.clientWidth + 'px';
-    div.style.fontSize = style.fontSize;
-    div.style.fontFamily = style.fontFamily;
-    div.style.lineHeight = style.lineHeight;
-    div.style.padding = style.padding;
-    div.style.border = style.border;
-    div.style.whiteSpace = 'pre-wrap';
-    div.style.wordWrap = 'break-word';
-    div.style.overflow = 'hidden';
-    
-    // Split text into before and after caret
-    const textBeforeCaret = textarea.value.substring(0, caretPos);
-    const textAfterCaret = textarea.value.substring(caretPos);
-    
-    // Create spans for before and after caret
-    const beforeSpan = document.createElement('span');
-    beforeSpan.textContent = textBeforeCaret;
-    
-    const caretSpan = document.createElement('span');
-    caretSpan.textContent = '|'; // Invisible marker
-    caretSpan.style.visibility = 'visible';
-    
-    const afterSpan = document.createElement('span');
-    afterSpan.textContent = textAfterCaret;
-    
-    div.appendChild(beforeSpan);
-    div.appendChild(caretSpan);
-    div.appendChild(afterSpan);
-    
-    document.body.appendChild(div);
-    
-    // Get textarea position
-    const textareaRect = textarea.getBoundingClientRect();
-    const caretRect = caretSpan.getBoundingClientRect();
-    
-    // Calculate position relative to textarea
-    const x = textareaRect.left + (caretRect.left - div.getBoundingClientRect().left);
-    const y = textareaRect.top + (caretRect.top - div.getBoundingClientRect().top);
-    
-    document.body.removeChild(div);
-    
-    return { x, y };
-  };
 
   const handleTextSelection = () => {
     if (!textareaRef.current) return;
@@ -125,35 +84,79 @@ export default function EditModal({ isOpen, onClose, content, onSave, documentId
     );
 
     if (selectedText.trim().length > 0) {
-      // Get position of selection start
-      const { x, y } = getTextareaCaretPosition(textarea, textarea.selectionStart);
-      
       setSelection({
         selectedText: selectedText.trim(),
         show: true,
-        x,
-        y,
+        selectionStart: textarea.selectionStart,
+        selectionEnd: textarea.selectionEnd,
       });
+      // Reset previous inline edit response
+      setInlineEditResponse(null);
     } else {
       setSelection(prev => ({ ...prev, show: false }));
+      setInlineEditResponse(null);
     }
   };
 
-  const handleQuerySubmit = (e: React.FormEvent) => {
+  const handleQuerySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim() && selection.selectedText) {
-      const payload = {
-        selectedText: selection.selectedText,
-        query: query.trim(),
-        timestamp: new Date().toISOString(),
-      };
+    if (!query.trim() || !selection.selectedText) return;
+
+    try {
+      setIsLoadingInlineEdit(true);
       
-      console.log("Query payload:", payload);
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+      const response = await fetch(`${apiBaseUrl}/api/edit/inline_edit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          selected_text: selection.selectedText,
+          query: query.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get inline edit suggestion: ${response.statusText}`);
+      }
+
+      const result: InlineEditResponse = await response.json();
+      setInlineEditResponse(result);
       
-      // Reset selection and query
-      setSelection(prev => ({ ...prev, show: false, x: 0, y: 0 }));
-      setQuery("");
+    } catch (error) {
+      console.error("Error getting inline edit suggestion:", error);
+      // TODO: Show error toast
+    } finally {
+      setIsLoadingInlineEdit(false);
     }
+  };
+
+  const handleAcceptEdit = () => {
+    if (!inlineEditResponse || !textareaRef.current) return;
+
+    // Replace the selected text with the edited text
+    const newContent = 
+      editedContent.substring(0, selection.selectionStart) +
+      inlineEditResponse.edited_text +
+      editedContent.substring(selection.selectionEnd);
+    
+    setEditedContent(newContent);
+    
+    // Reset states
+    setSelection(prev => ({ ...prev, show: false }));
+    setInlineEditResponse(null);
+    setQuery("");
+    
+    // Focus back to textarea
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 100);
+  };
+
+  const handleRejectEdit = () => {
+    setInlineEditResponse(null);
+    setQuery("");
   };
 
   const handleSave = () => {
@@ -217,11 +220,13 @@ export default function EditModal({ isOpen, onClose, content, onSave, documentId
   const handleForceClose = () => {
     // Reset all states when forcefully closing
     setEditedContent(content); // Reset to original content
-    setSelection({ selectedText: "", show: false, x: 0, y: 0 });
+    setSelection({ selectedText: "", show: false, selectionStart: 0, selectionEnd: 0 });
     setQuery("");
     setShowSaveConfirmation(false);
     setShowUnsavedWarning(false);
     setIsSaving(false);
+    setInlineEditResponse(null);
+    setIsLoadingInlineEdit(false);
     onClose();
   };
 
@@ -270,6 +275,98 @@ export default function EditModal({ isOpen, onClose, content, onSave, documentId
             </DialogTitle>
           </DialogHeader>
           
+          {/* Fixed position popup below header */}
+          {selection.show && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+              <div className="space-y-3">
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  <span className="font-medium">Selected: </span>
+                  <span className="italic">
+                    "{selection.selectedText.length > 60 
+                      ? selection.selectedText.substring(0, 60) + "..." 
+                      : selection.selectedText}"
+                  </span>
+                </div>
+                
+                {!inlineEditResponse ? (
+                  <form onSubmit={handleQuerySubmit} className="space-y-2">
+                    <Input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="What would you like to do with this text?"
+                      className="w-full text-sm"
+                      autoFocus
+                      disabled={isLoadingInlineEdit}
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-xs h-8 px-3"
+                        onClick={() => setSelection(prev => ({ ...prev, show: false }))}
+                        disabled={isLoadingInlineEdit}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        size="sm" 
+                        className="text-xs h-8 px-3"
+                        disabled={!query.trim() || isLoadingInlineEdit}
+                      >
+                        {isLoadingInlineEdit ? (
+                          <>
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          'Submit'
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded p-2">
+                      <div className="text-xs font-medium text-green-800 dark:text-green-200 mb-1">
+                        Suggested edit:
+                      </div>
+                      <div className="text-sm text-green-700 dark:text-green-300">
+                        "{inlineEditResponse.edited_text}"
+                      </div>
+                      <div className="text-xs text-green-600 dark:text-green-400 mt-1 italic">
+                        {inlineEditResponse.message}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 justify-end">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        className="text-xs h-8 px-3 text-red-600 hover:text-red-700"
+                        onClick={handleRejectEdit}
+                      >
+                        <XIcon className="h-3 w-3 mr-1" />
+                        Reject
+                      </Button>
+                      <Button 
+                        type="button" 
+                        size="sm" 
+                        className="text-xs h-8 px-3 bg-green-600 hover:bg-green-700"
+                        onClick={handleAcceptEdit}
+                      >
+                        <Check className="h-3 w-3 mr-1" />
+                        Accept
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
           <div className="flex-1 relative">
             <textarea
               ref={textareaRef}
@@ -284,62 +381,6 @@ export default function EditModal({ isOpen, onClose, content, onSave, documentId
               placeholder="Edit your document content here..."
               spellCheck={false}
             />
-            
-            {/* Floating popover positioned at selection */}
-            {selection.show && (
-              <div
-                className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 
-                           rounded-lg shadow-lg p-4 min-w-[350px]"
-                style={{
-                  left: `${selection.x}px`,
-                  top: `${selection.y - 10}px`,
-                  transform: 'translate(-50%, -100%)',
-                }}
-                onMouseDown={(e) => {
-                  // Prevent the popover from closing when clicking inside
-                  e.stopPropagation();
-                }}
-              >
-                  <div className="space-y-3">
-                    <div className="text-xs text-gray-600 dark:text-gray-400">
-                      <span className="font-medium">Selected text:</span>
-                      <div className="mt-1 p-2 bg-gray-100 dark:bg-gray-700 rounded text-gray-800 dark:text-gray-200 max-h-20 overflow-y-auto">
-                        "{selection.selectedText.length > 100 
-                          ? selection.selectedText.substring(0, 100) + "..." 
-                          : selection.selectedText}"
-                      </div>
-                    </div>
-                    
-                    <form onSubmit={handleQuerySubmit} className="space-y-3">
-                      <Input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Enter your query about this text..."
-                        className="w-full"
-                        autoFocus
-                      />
-                      <div className="flex gap-2 justify-end">
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setSelection(prev => ({ ...prev, show: false, x: 0, y: 0 }))}
-                        >
-                          Cancel
-                        </Button>
-                        <Button type="submit" size="sm" disabled={!query.trim()}>
-                          Submit Query
-                        </Button>
-                      </div>
-                    </form>
-                  </div>
-                  
-                  {/* Arrow pointing down to the selected text */}
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
-                    <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-300 dark:border-t-gray-600"></div>
-                  </div>
-                </div>
-              )}
           </div>
           
           <div className="text-xs text-gray-500 mt-2">
