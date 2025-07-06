@@ -22,6 +22,8 @@ from agents import InputGuardrailTripwireTriggered, Runner, set_default_openai_k
 from app.config import settings
 import json
 import asyncio
+import uuid
+from typing import AsyncGenerator
 
 from app.models.edit_documentation import (
     DocumentEditWithOriginal,
@@ -29,6 +31,17 @@ from app.models.edit_documentation import (
     ChangeRequest,
     InLineEditAgentResponse,
     InLineEditGuardrailException,
+)
+from app.models.websocket_events import (
+    EditProgressEvent,
+    IntentDetectedEvent,
+    SuggestionsFoundEvent,
+    DocumentProcessingEvent,
+    DocumentCompletedEvent,
+    DocumentCreatedEvent,
+    DocumentDeletedEvent,
+    ErrorEvent,
+    ProgressEvent,
 )
 
 
@@ -84,6 +97,103 @@ class MainEditor:
             create=self.create_documents,
             delete=self.delete_documents,
         )
+
+    async def run_with_streaming(self, session_id: str) -> AsyncGenerator[EditProgressEvent, None]:
+        """
+        Streaming version of run() that yields progress events as operations complete.
+        """
+        try:
+            # Step 1: Detect intent
+            yield ProgressEvent(
+                event_id=str(uuid.uuid4()),
+                session_id=session_id,
+                payload={"message": "Detecting user intent...", "step": 1, "total_steps": 4}
+            )
+            
+            detected_intents = await self._detect_intent()
+            
+            yield IntentDetectedEvent(
+                event_id=str(uuid.uuid4()),
+                session_id=session_id,
+                payload=detected_intents
+            )
+            
+            # Step 2: Process each intent with streaming
+            total_intents = len(detected_intents.intents)
+            if total_intents == 0:
+                yield ProgressEvent(
+                    event_id=str(uuid.uuid4()),
+                    session_id=session_id,
+                    payload={"message": "No actionable intents detected", "step": 4, "total_steps": 4}
+                )
+                return
+            
+            # Map intent names to their corresponding streaming handler methods
+            intent_handlers = {
+                "edit": self._handle_edit_intent_streaming,
+                "create": self._handle_create_intent_streaming,
+                "delete": self._handle_delete_intent_streaming,
+            }
+            
+            current_step = 2
+            for i, intent in enumerate(detected_intents.intents):
+                yield ProgressEvent(
+                    event_id=str(uuid.uuid4()),
+                    session_id=session_id,
+                    payload={
+                        "message": f"Processing {intent.intent} intent ({i+1}/{total_intents})",
+                        "step": current_step,
+                        "total_steps": 4
+                    }
+                )
+                
+                handler = intent_handlers.get(intent.intent)
+                if handler is not None:
+                    # Stream events from the handler
+                    async for event in handler(intent, session_id):
+                        yield event
+                else:
+                    yield ErrorEvent(
+                        event_id=str(uuid.uuid4()),
+                        session_id=session_id,
+                        payload={
+                            "message": f"No handler found for intent '{intent.intent}'",
+                            "error_type": "UnknownIntent"
+                        }
+                    )
+                
+                current_step += 1
+            
+            # Step 4: Final progress
+            yield ProgressEvent(
+                event_id=str(uuid.uuid4()),
+                session_id=session_id,
+                payload={
+                    "message": "All operations completed",
+                    "step": 4,
+                    "total_steps": 4
+                }
+            )
+            
+        except asyncio.CancelledError:
+            yield ErrorEvent(
+                event_id=str(uuid.uuid4()),
+                session_id=session_id,
+                payload={
+                    "message": "Operation was cancelled",
+                    "error_type": "CancelledError"
+                }
+            )
+            raise
+        except Exception as e:
+            yield ErrorEvent(
+                event_id=str(uuid.uuid4()),
+                session_id=session_id,
+                payload={
+                    "message": str(e),
+                    "error_type": type(e).__name__
+                }
+            )
 
     async def _handle_edit_intent(self, intent) -> None:
         """
@@ -214,6 +324,155 @@ class MainEditor:
         response = await Runner.run(intent_agent, query)
         print(f"Detected intent: {response}")
         return response.final_output_as(Detected_Intent)
+
+    async def _handle_edit_intent_streaming(self, intent, session_id: str) -> AsyncGenerator[EditProgressEvent, None]:
+        """Streaming version of edit intent handler"""
+        try:
+            # Get edit suggestions
+            edit_suggestions = await self._get_edit_suggestions(intent)
+            
+            yield SuggestionsFoundEvent(
+                event_id=str(uuid.uuid4()),
+                session_id=session_id,
+                payload=edit_suggestions
+            )
+            
+            # Process suggestions if any exist
+            if edit_suggestions.suggestions:
+                total_suggestions = len(edit_suggestions.suggestions)
+                
+                for i, suggestion in enumerate(edit_suggestions.suggestions):
+                    # Get document title from document ID
+                    document_title = "Unknown"
+                    try:
+                        from app.core.repositories.document_repository import DocumentRepository
+                        doc_repo = DocumentRepository()
+                        doc = await doc_repo.get_document_by_id(suggestion.document_id)
+                        document_title = doc.get("title", f"Document {suggestion.document_id[:8]}")
+                    except Exception:
+                        document_title = f"Document {suggestion.document_id[:8]}"
+                    
+                    yield DocumentProcessingEvent(
+                        event_id=str(uuid.uuid4()),
+                        session_id=session_id,
+                        payload={
+                            "suggestion_index": i + 1,
+                            "total_suggestions": total_suggestions,
+                            "document_title": document_title,
+                            "document_path": suggestion.path,
+                        }
+                    )
+                    
+                    try:
+                        # Process single suggestion
+                        task_input = json.dumps({"suggestions": [suggestion.model_dump()]})
+                        result = await Runner.run(edit_content_agent, task_input)
+                        documents_edits = result.final_output_as(Edits)
+                        changes = documents_edits.changes
+                        
+                        # Yield completed documents
+                        for change in changes:
+                            self.edit_changes.append(change)
+                            yield DocumentCompletedEvent(
+                                event_id=str(uuid.uuid4()),
+                                session_id=session_id,
+                                payload=change
+                            )
+                            
+                    except Exception as e:
+                        yield ErrorEvent(
+                            event_id=str(uuid.uuid4()),
+                            session_id=session_id,
+                            payload={
+                                "message": f"Error processing suggestion {i + 1}: {str(e)}",
+                                "error_type": type(e).__name__
+                            }
+                        )
+            
+        except Exception as e:
+            yield ErrorEvent(
+                event_id=str(uuid.uuid4()),
+                session_id=session_id,
+                payload={
+                    "message": f"Error in edit intent handler: {str(e)}",
+                    "error_type": type(e).__name__
+                }
+            )
+
+    async def _handle_create_intent_streaming(self, intent, session_id: str) -> AsyncGenerator[EditProgressEvent, None]:
+        """Streaming version of create intent handler"""
+        try:
+            yield ProgressEvent(
+                event_id=str(uuid.uuid4()),
+                session_id=session_id,
+                payload={"message": "Creating new documentation content..."}
+            )
+            
+            create_content_agent_response = await Runner.run(
+                create_content_agent,
+                f"User query: {self.query} Task: {intent.task} Reason: {intent.reason}. Create new documentation based on the task",
+            )
+            created_documents = create_content_agent_response.final_output_as(CreateContentResponse)
+            
+            # Yield created documents
+            for doc in created_documents.documents:
+                self.create_documents.append(doc)
+                yield DocumentCreatedEvent(
+                    event_id=str(uuid.uuid4()),
+                    session_id=session_id,
+                    payload=doc
+                )
+                
+        except Exception as e:
+            yield ErrorEvent(
+                event_id=str(uuid.uuid4()),
+                session_id=session_id,
+                payload={
+                    "message": f"Error in create intent handler: {str(e)}",
+                    "error_type": type(e).__name__
+                }
+            )
+
+    async def _handle_delete_intent_streaming(self, intent, session_id: str) -> AsyncGenerator[EditProgressEvent, None]:
+        """Streaming version of delete intent handler"""
+        try:
+            yield ProgressEvent(
+                event_id=str(uuid.uuid4()),
+                session_id=session_id,
+                payload={"message": "Identifying documents for deletion..."}
+            )
+            
+            delete_content_agent_response = await Runner.run(
+                delete_content_agent,
+                f"User query: {self.query} Task: {intent.task} Reason: {intent.reason}. Identify documents to delete based on the task",
+            )
+            delete_response = delete_content_agent_response.final_output_as(DeleteContentResponse)
+            
+            # Yield deleted documents
+            if delete_response.documents_to_delete:
+                for doc in delete_response.documents_to_delete:
+                    self.delete_documents.append(doc)
+                    yield DocumentDeletedEvent(
+                        event_id=str(uuid.uuid4()),
+                        session_id=session_id,
+                        payload=doc
+                    )
+            else:
+                yield ProgressEvent(
+                    event_id=str(uuid.uuid4()),
+                    session_id=session_id,
+                    payload={"message": "No documents identified for deletion"}
+                )
+                
+        except Exception as e:
+            yield ErrorEvent(
+                event_id=str(uuid.uuid4()),
+                session_id=session_id,
+                payload={
+                    "message": f"Error in delete intent handler: {str(e)}",
+                    "error_type": type(e).__name__
+                }
+            )
 
 class InlineEditor:
     

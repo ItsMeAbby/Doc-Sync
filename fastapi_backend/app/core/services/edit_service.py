@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from typing import List, Optional, Tuple
+import uuid
+from typing import List, Optional, Tuple, AsyncGenerator
 
 from app.models.edit_documentation import (
     EditDocumentationRequest,
@@ -12,6 +13,17 @@ from app.models.edit_documentation import (
     UpdateDocumentationResponse,
     ProcessingError,
     DocumentEditWithOriginal
+)
+from app.models.websocket_events import (
+    EditProgressEvent,
+    IntentDetectedEvent,
+    SuggestionsFoundEvent,
+    DocumentProcessingEvent,
+    DocumentCompletedEvent,
+    DocumentCreatedEvent,
+    DocumentDeletedEvent,
+    ErrorEvent,
+    ProgressEvent,
 )
 from app.models.documents import DocumentContentCreate, DocumentCreate
 from app.services.agents.create_content_agent import GeneratedDocument
@@ -61,6 +73,34 @@ class EditService:
         """Edit documentation based on a query"""
         editor = MainEditor(query=edit_request.query,document_id=edit_request.document_id)
         return await editor.run()
+
+    async def edit_documentation_stream(
+        self, 
+        edit_request: EditDocumentationRequest, 
+        session_id: str
+    ) -> AsyncGenerator[EditProgressEvent, None]:
+        """Stream edit documentation progress events"""
+        try:
+            # Create streaming editor
+            editor = MainEditor(
+                query=edit_request.query, 
+                document_id=edit_request.document_id
+            )
+            
+            # Stream events from the editor
+            async for event in editor.run_with_streaming(session_id):
+                yield event
+                
+        except Exception as e:
+            logger.error(f"Error in edit_documentation_stream: {e}")
+            yield ErrorEvent(
+                event_id=str(uuid.uuid4()),
+                session_id=session_id,
+                payload={
+                    "message": str(e),
+                    "error_type": type(e).__name__
+                }
+            )
 
     def validate_edit_item(self, edit: DocumentEditWithOriginal) -> Optional[str]:
         """Validate a single edit item. Returns error message if invalid, None if valid."""

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -36,6 +36,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import DocumentMentionInput from "@/components/DocumentMentionInput";
+import { useEditDocumentationWebSocket, EditProgressEvent } from "@/hooks/useEditDocumentationWebSocket";
+import { EditProgressDisplay } from "@/components/EditProgressDisplay";
+import { EnhancedProgressDisplay } from "@/components/StreamingProgress/EnhancedProgressDisplay";
 
 export default function DocumentationChangePage() {
   const searchParams = useSearchParams();
@@ -62,6 +65,102 @@ export default function DocumentationChangePage() {
   const [confirmAction, setConfirmAction] = useState<
     "selected" | "ignore" | null
   >(null);
+  const [useStreaming, setUseStreaming] = useState(false);
+  const [showStreamingResults, setShowStreamingResults] = useState(false);
+  const allEventsRef = useRef<EditProgressEvent[]>([]);
+
+  // WebSocket streaming hook
+  const {
+    isConnected: wsConnected,
+    isProcessing: wsProcessing,
+    currentStep,
+    totalSteps,
+    events: wsEvents,
+    error: wsError,
+    startEdit,
+    clearEvents,
+    disconnect,
+    connect: wsConnect,
+  } = useEditDocumentationWebSocket({
+    onEvent: (event) => {
+      console.log("WebSocket event:", event);
+      
+      // Track all events in ref
+      allEventsRef.current.push(event);
+      
+      // Handle completion events
+      if (event.type === "finished") {
+        console.log("All events for processing:", allEventsRef.current);
+        
+        const editEvents = allEventsRef.current.filter((e: EditProgressEvent) => e.type === "document_completed");
+        const createEvents = allEventsRef.current.filter((e: EditProgressEvent) => e.type === "document_created");
+        const deleteEvents = allEventsRef.current.filter((e: EditProgressEvent) => e.type === "document_deleted");
+        
+        console.log("Filtered events:", { editEvents, createEvents, deleteEvents });
+        
+        const streamingResponse: EditDocumentationResponse = {
+          edit: editEvents.map((e: EditProgressEvent) => e.payload),
+          create: createEvents.map((e: EditProgressEvent) => e.payload),
+          delete: deleteEvents.map((e: EditProgressEvent) => e.payload),
+        };
+        
+        console.log("Streaming response:", streamingResponse);
+        
+        // Fetch original content for edit changes
+        if (streamingResponse.edit && streamingResponse.edit.length > 0) {
+          fetchOriginalContentForEdits(streamingResponse.edit);
+        }
+        
+        setResponse(streamingResponse);
+        setShowStreamingResults(true);
+      }
+    },
+    onError: (error) => {
+      console.error("WebSocket error:", error);
+      toast({
+        title: "Connection Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const fetchOriginalContentForEdits = async (edits: DocumentEdit[]) => {
+    const contentMap = new Map<string, OriginalContent>();
+    for (const edit of edits) {
+      try {
+        const docRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents/${edit.document_id}/versions/${edit.version}`,
+        );
+        if (docRes.ok) {
+          const docData = await docRes.json();
+          const originalContent: OriginalContent = {
+            markdown_content: docData.markdown_content,
+            language: docData.language,
+            name: docData.name,
+            title: docData.title,
+            path: docData.path,
+          };
+          contentMap.set(edit.document_id, originalContent);
+        }
+      } catch (err) {
+        console.error(
+          `Failed to fetch content for document ${edit.document_id}:`,
+          err,
+        );
+      }
+    }
+    setDocumentContents(contentMap);
+  };
+
+  // Handle streaming toggle
+  useEffect(() => {
+    if (useStreaming && !wsConnected) {
+      wsConnect();
+    } else if (!useStreaming && wsConnected) {
+      disconnect();
+    }
+  }, [useStreaming, wsConnected, wsConnect, disconnect]);
 
   useEffect(() => {
     const queryParam = searchParams.get("query");
@@ -138,35 +237,47 @@ export default function DocumentationChangePage() {
       return;
     }
 
-    try {
-      setLoading(true);
-      setError(null);
-      setResponse(null);
+    // Reset state
+    setError(null);
+    setResponse(null);
+    setShowStreamingResults(false);
+    clearEvents();
+    allEventsRef.current = [];
 
-      const payload: any = {
-        query: query.trim(),
-      };
+    const editRequest = {
+      query: query.trim(),
+      document_id: documentId || undefined,
+    };
 
-      if (documentId) {
-        payload.document_id = documentId;
+    if (useStreaming && wsConnected) {
+      // Use WebSocket streaming
+      try {
+        startEdit(editRequest);
+      } catch (err) {
+        console.error("Failed to start streaming edit:", err);
+        setError(err instanceof Error ? err.message : "Failed to start streaming");
       }
+    } else {
+      // Fall back to traditional REST API
+      try {
+        setLoading(true);
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/edit/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/edit/`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(editRequest),
           },
-          body: JSON.stringify(payload),
-        },
-      );
+        );
 
-      if (!res.ok) {
-        throw new Error(`API request failed: ${res.status} ${res.statusText}`);
-      }
+        if (!res.ok) {
+          throw new Error(`API request failed: ${res.status} ${res.statusText}`);
+        }
 
-      const data: EditDocumentationResponse = await res.json();
+        const data: EditDocumentationResponse = await res.json();
       // Simulate API response for demonstration purposes
       //       const data: EditDocumentationResponse = {
       //   "edit": [
@@ -305,40 +416,17 @@ export default function DocumentationChangePage() {
       //     }
       //   ]
       // }
-      setResponse(data);
+        setResponse(data);
 
-      // Fetch original content for edit changes
-      if (data.edit && data.edit.length > 0) {
-        const contentMap = new Map<string, OriginalContent>();
-        for (const edit of data.edit) {
-          try {
-            const docRes = await fetch(
-              `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents/${edit.document_id}/versions/${edit.version}`,
-            );
-            if (docRes.ok) {
-              const docData = await docRes.json();
-              const originalContent: OriginalContent = {
-                markdown_content: docData.markdown_content,
-                language: docData.language,
-                name: docData.name,
-                title: docData.title,
-                path: docData.path,
-              };
-              contentMap.set(edit.document_id, originalContent);
-            }
-          } catch (err) {
-            console.error(
-              `Failed to fetch content for document ${edit.document_id}:`,
-              err,
-            );
-          }
+        // Fetch original content for edit changes
+        if (data.edit && data.edit.length > 0) {
+          await fetchOriginalContentForEdits(data.edit);
         }
-        setDocumentContents(contentMap);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -1068,20 +1156,35 @@ export default function DocumentationChangePage() {
           onSubmit={handleSubmit}
         />
 
-        <Button
-          onClick={handleSubmit}
-          disabled={loading || !query.trim()}
-          className="w-full sm:w-auto"
-        >
-          {loading ? (
-            <>
-              <Spinner size="sm" className="mr-2" />
-              Processing...
-            </>
-          ) : (
-            "Analyze Documentation Impact"
-          )}
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <Button
+            onClick={handleSubmit}
+            disabled={(loading || wsProcessing) || !query.trim()}
+            className="w-full sm:w-auto"
+          >
+            {(loading || wsProcessing) ? (
+              <>
+                <Spinner size="sm" className="mr-2" />
+                {wsProcessing ? "Processing..." : "Processing..."}
+              </>
+            ) : (
+              "Analyze Documentation Impact"
+            )}
+          </Button>
+          
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <input
+              type="checkbox"
+              id="streaming"
+              checked={useStreaming}
+              onChange={(e) => setUseStreaming(e.target.checked)}
+              className="rounded"
+            />
+            <label htmlFor="streaming">
+              Real-time streaming {useStreaming ? (wsConnected ? "✓ Connected" : "⚠️ Connecting...") : "(disconnected)"}
+            </label>
+          </div>
+        </div>
       </Card>
 
       {error && (
@@ -1093,7 +1196,19 @@ export default function DocumentationChangePage() {
         </Card>
       )}
 
-      {response && (
+      {/* WebSocket Progress Display */}
+      {(wsProcessing || wsEvents.length > 0) && (
+        <EnhancedProgressDisplay
+          isProcessing={wsProcessing}
+          events={wsEvents}
+          error={wsError}
+          onCancel={() => disconnect()}
+          onViewResults={() => setShowStreamingResults(true)}
+          showResults={showStreamingResults}
+        />
+      )}
+
+      {response && (showStreamingResults || !useStreaming) && (
         <Card className="p-4 sm:p-6">
           <h3 className="text-lg sm:text-xl font-semibold mb-4">
             Suggested Changes
