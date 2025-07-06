@@ -14,8 +14,11 @@ from app.services.agents.create_content_agent import (
     GeneratedDocument,
     create_content_agent,
 )
+from app.services.agents.inlineedit_agent import (
+    inline_edit_agent,
+)
 from app.services.shared.models import ApiRef
-from agents import Runner, set_default_openai_key, set_tracing_disabled
+from agents import InputGuardrailTripwireTriggered, Runner, set_default_openai_key, set_tracing_disabled
 from app.config import settings
 import json
 import asyncio
@@ -24,6 +27,8 @@ from app.models.edit_documentation import (
     DocumentEditWithOriginal,
     EditDocumentationResponse,
     ChangeRequest,
+    InLineEditAgentResponse,
+    InLineEditGuardrailException,
 )
 
 
@@ -210,6 +215,41 @@ class MainEditor:
         print(f"Detected intent: {response}")
         return response.final_output_as(Detected_Intent)
 
+class InlineEditor:
+    
+
+    def __init__(self, selected_text: str, query: str):
+        """
+        Initialize the inline editor with the selected text and instructions(query).
+        :param selected_text: The text that has been selected for inline editing.
+        :param instructions: Instructions for the inline editor.
+        """
+        self.selected_text = selected_text
+        self.query = query
+
+    async def run(self) -> InLineEditAgentResponse:
+        """
+        Run the inline editor to apply changes to the given text
+        """
+        prompt=f"""Apply the given instructions to the selected text:
+## Instructions:
+{self.query}
+## Selected Text:
+{self.selected_text}
+        """
+        try:
+            inline_agent_response= await Runner.run(inline_edit_agent, prompt)
+            response=inline_agent_response.final_output_as(
+                InLineEditAgentResponse
+            )
+            print(f"Inline edit response: {response.model_dump_json(indent=2)}")
+            return InLineEditAgentResponse(edited_text=response.edited_text)
+        except InputGuardrailTripwireTriggered:
+            raise InLineEditGuardrailException(
+                message="System only supports queries requesting for edits. Please ensure your query is suitable for inline editing."
+            )
+
+                                
 
 def update_markdown(document_to_edit: DocumentEditWithOriginal) -> str:
     """

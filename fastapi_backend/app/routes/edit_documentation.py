@@ -8,9 +8,9 @@ from app.models.edit_documentation import (
     InLineEditRequest,
     InLineEditResponse,
 )
-from app.core.services.edit_service import EditService
+from app.core.services.edit_service import EditService, InlineEditService
 from app.core.exceptions import handle_service_exception
-from app.api.dependencies import get_edit_service
+from app.api.dependencies import get_edit_service, get_inline_edit_service
 
 router = APIRouter(tags=["edit_documentation"])
 
@@ -51,19 +51,16 @@ async def update_documentation(
 @router.post(
     "/inline_edit",
     response_model=InLineEditResponse,
+
 )
 async def inline_edit(
-    edit_request: InLineEditRequest
+    edit_request: InLineEditRequest,service: InlineEditService = Depends(get_inline_edit_service)
 ):
     """
     Endpoint to perform inline edits on documentation.
     """
     try:
-        return InLineEditResponse(
-            query=edit_request.query,
-            original_text=edit_request.selected_text,
-            edited_text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-            message="Inline edit processed successfully."
-        )
+        
+        return await service.inline_edit(edit_request)
     except Exception as e:
         raise handle_service_exception(e)

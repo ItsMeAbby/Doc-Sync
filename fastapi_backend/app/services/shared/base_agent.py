@@ -37,12 +37,14 @@ class BaseAgent:
         instructions: str,
         output_type: Type[T],
         tools: Optional[List[Any]] = None,
+        input_guardrails: Optional[List[Any]] = None,
     ):
         self.config = BaseAgentConfig()
         self.name = name
         self.instructions = instructions
         self.output_type = output_type
         self.tools = tools or []
+        self.input_guardrails = input_guardrails or []
 
         # Create the agent instance
         self.agent = Agent(
@@ -51,6 +53,7 @@ class BaseAgent:
             model=self.config.get_model(),
             output_type=self.output_type,
             tools=self.tools,
+            input_guardrails=self.input_guardrails,
         )
 
         logger.info(f"Initialized agent: {self.name}")
@@ -81,9 +84,10 @@ class AgentFactory:
         instructions: str,
         output_type: Type[T],
         tools: Optional[List[Any]] = None,
+        input_guardrails: Optional[List[Any]] = None,
     ) -> BaseAgent:
         """Create a new agent with standard configuration"""
-        return BaseAgent(name, instructions, output_type, tools)
+        return BaseAgent(name, instructions, output_type, tools, input_guardrails)
 
     @staticmethod
     def create_runner(agent: BaseAgent) -> Runner:

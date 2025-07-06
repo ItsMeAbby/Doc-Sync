@@ -49,6 +49,22 @@ class InLineEditResponse(BaseModel):
         description="Message indicating the result of the inline edit operation.",
     )
 
+class InLineEditAgentResponse(BaseModel):
+    """
+    Represents the response from the inline edit agent.
+    Contains the edited text
+    """
+
+    edited_text: str = Field(
+        ...,
+        description="The text after inline edits have been applied.",
+    )
+
+class EditGuardrailResponse(BaseModel):
+    not_edit_request: bool
+    reasoning: str
+
+
 class EditDocumentationResponse(BaseModel):
     edit: Optional[List[DocumentEdit]] = Field(
         default=[], description="List of suggested edits to be made to the document."
@@ -124,3 +140,13 @@ class UpdateDocumentationResponse(BaseModel):
     errors: Optional[List[ProcessingError]] = Field(
         default=[], description="Detailed error information"
     )
+
+class InLineEditGuardrailException(Exception):
+    """
+    Exception raised when the inline edit guardrail is triggered.
+    This indicates that the input does not meet the criteria for inline editing.
+    """
+
+    def __init__(self, message: str = "Input does not meet inline edit criteria."):
+        super().__init__(message)
+        self.message = message
