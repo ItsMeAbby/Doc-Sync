@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import * as Popover from "@radix-ui/react-popover";
 import { Save, X, Check, X as XIcon, Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface EditModalProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ interface InlineEditResponse {
 }
 
 export default function EditModal({ isOpen, onClose, content, onSave, documentId, onDocumentUpdated }: EditModalProps) {
+  const { toast } = useToast();
   const [editedContent, setEditedContent] = useState(content);
   const [selection, setSelection] = useState<SelectionData>({
     selectedText: "",
@@ -126,7 +128,11 @@ export default function EditModal({ isOpen, onClose, content, onSave, documentId
       
     } catch (error) {
       console.error("Error getting inline edit suggestion:", error);
-      // TODO: Show error toast
+      toast({
+        title: "Error",
+        description: "Failed to get inline edit suggestion. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoadingInlineEdit(false);
     }
@@ -209,7 +215,11 @@ export default function EditModal({ isOpen, onClose, content, onSave, documentId
       onClose();
     } catch (error) {
       console.error("Error saving document:", error);
-      // TODO: Show error toast
+      toast({
+        title: "Save Failed",
+        description: "Failed to save document. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
