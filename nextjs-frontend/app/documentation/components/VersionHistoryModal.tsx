@@ -139,7 +139,7 @@ export default function VersionHistoryModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="w-[95vw] sm:w-[90vw] lg:max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
@@ -199,7 +199,7 @@ export default function VersionHistoryModal({
           {!loading && !error && versions.length > 0 ? (
             <>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <label
                     htmlFor="version-select"
                     className="text-sm font-medium"
@@ -212,7 +212,7 @@ export default function VersionHistoryModal({
                       disabled={reverting}
                       variant="outline"
                       size="sm"
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 whitespace-nowrap"
                     >
                       <RotateCcw className="h-4 w-4" />
                       {reverting ? "Reverting..." : "Revert to this version"}
@@ -333,15 +333,17 @@ export default function VersionHistoryModal({
 
                   <TabsContent value="content" className="mt-4">
                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md">
-                      <ScrollArea className="h-96 p-4">
-                        <ReactMarkdown
-                          className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-gray-800 dark:prose-headings:text-white prose-a:text-blue-600 dark:prose-a:text-blue-400"
-                          rehypePlugins={[rehypeHighlight, rehypeRaw]}
-                          remarkPlugins={[remarkGfm]}
-                        >
-                          {selectedVersion.markdown_content ||
-                            "No content available"}
-                        </ReactMarkdown>
+                      <ScrollArea className="h-96 p-4 overflow-auto">
+                        <div className="overflow-x-auto">
+                          <ReactMarkdown
+                            className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-gray-800 dark:prose-headings:text-white prose-a:text-blue-600 dark:prose-a:text-blue-400"
+                            rehypePlugins={[rehypeHighlight, rehypeRaw]}
+                            remarkPlugins={[remarkGfm]}
+                          >
+                            {selectedVersion.markdown_content ||
+                              "No content available"}
+                          </ReactMarkdown>
+                        </div>
                       </ScrollArea>
                     </div>
                   </TabsContent>
