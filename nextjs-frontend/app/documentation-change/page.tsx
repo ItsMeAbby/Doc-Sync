@@ -10,7 +10,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import {
   fetchDocumentsWithCache,
   invalidateDocumentCache,
-} from "@/app/utils/documentCache";
+} from "@/app/api/documents";
+import { editApi } from "@/app/api/edit";
 import { ChangeTypeFilter, ChangeType } from "@/components/ChangeTypeFilter";
 import { DocumentChangeCard } from "@/components/DocumentChangeCard";
 import type {
@@ -177,9 +178,7 @@ export default function DocumentationChangePage() {
   const fetchDocumentDetails = async (docId: string) => {
     try {
       setLoadingDoc(true);
-      const data = await fetchDocumentsWithCache(
-        process.env.NEXT_PUBLIC_API_BASE_URL || "",
-      );
+      const data = await fetchDocumentsWithCache();
 
       // Search for the document in all languages and categories
       let foundDoc = null;
@@ -247,6 +246,7 @@ export default function DocumentationChangePage() {
     const editRequest = {
       query: query.trim(),
       document_id: documentId || undefined,
+      language: "en", // Default language, could be made configurable
     };
 
     if (useStreaming && wsConnected) {
@@ -262,22 +262,7 @@ export default function DocumentationChangePage() {
       try {
         setLoading(true);
 
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/edit/`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(editRequest),
-          },
-        );
-
-        if (!res.ok) {
-          throw new Error(`API request failed: ${res.status} ${res.statusText}`);
-        }
-
-        const data: EditDocumentationResponse = await res.json();
+        const data: EditDocumentationResponse = await editApi.getEditSuggestions(editRequest);
       // Simulate API response for demonstration purposes
       //       const data: EditDocumentationResponse = {
       //   "edit": [

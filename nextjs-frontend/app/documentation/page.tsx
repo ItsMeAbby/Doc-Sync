@@ -15,8 +15,8 @@ import { FaLightbulb } from "react-icons/fa";
 import { RefreshCw, Menu, X } from "lucide-react";
 import {
   fetchDocumentsWithCache,
-  documentCache,
-} from "@/app/utils/documentCache";
+  invalidateDocumentCache,
+} from "@/app/api/documents";
 
 export default function DocumentationPage() {
   const router = useRouter();
@@ -41,9 +41,7 @@ export default function DocumentationPage() {
     const fetchDocuments = async () => {
       try {
         setLoading(true);
-        const data = await fetchDocumentsWithCache(
-          process.env.NEXT_PUBLIC_API_BASE_URL || "",
-        );
+        const data = await fetchDocumentsWithCache();
         setDocuments(data);
 
         // Check for stored selection from documentation-change page
@@ -176,12 +174,10 @@ export default function DocumentationPage() {
 
   const handleRefresh = async () => {
     // Clear cache and refetch
-    documentCache.invalidate("documents_all");
+    invalidateDocumentCache();
     setLoading(true);
     try {
-      const data = await fetchDocumentsWithCache(
-        process.env.NEXT_PUBLIC_API_BASE_URL || "",
-      );
+      const data = await fetchDocumentsWithCache();
       setDocuments(data);
       
       // Update selected document with fresh data if one is selected
@@ -293,9 +289,7 @@ export default function DocumentationPage() {
                 setError(null);
                 setLoading(true);
                 // Retry the fetch
-                fetchDocumentsWithCache(
-                  process.env.NEXT_PUBLIC_API_BASE_URL || "",
-                )
+                fetchDocumentsWithCache()
                   .then((data) => {
                     setDocuments(data);
                     setLoading(false);

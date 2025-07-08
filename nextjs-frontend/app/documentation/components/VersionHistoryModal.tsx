@@ -33,7 +33,7 @@ import rehypeHighlight from "rehype-highlight";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 import { DocumentNode, DocumentVersion } from "@/app/documentation/types";
-import { documentVersionsApi } from "@/app/api/documentVersions";
+import { versionsApi } from "@/app/api/versions";
 
 interface VersionHistoryModalProps {
   document: DocumentNode;
@@ -67,15 +67,14 @@ export default function VersionHistoryModal({
     try {
       setLoading(true);
       setError(null);
-      const fetchedVersions = await documentVersionsApi.getDocumentVersions(
+      const fetchedVersions = await versionsApi.getDocumentVersions(
         document.id,
       );
       setVersions(fetchedVersions);
 
       // Select the latest version by default
       if (fetchedVersions.length > 0) {
-        const latestVersion =
-          fetchedVersions.find((v) => v.latest) || fetchedVersions[0];
+        const latestVersion = fetchedVersions[0]; // Assume first version is latest
         setSelectedVersionId(latestVersion.version);
       }
     } catch (err) {

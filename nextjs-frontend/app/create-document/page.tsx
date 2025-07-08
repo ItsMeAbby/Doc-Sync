@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { documentsApi, invalidateDocumentCache } from "@/app/api/documents";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,7 +24,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { documentCache } from "@/app/utils/documentCache";
 
 interface ParentDocument {
   id: string;
@@ -58,16 +58,8 @@ export default function CreateDocumentPage() {
     const fetchParentDocuments = async () => {
       setLoadingParents(true);
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents/root`,
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setParentDocuments(data);
-        } else {
-          console.error("Failed to fetch parent documents");
-        }
+        const data = await documentsApi.getRootDocuments();
+        setParentDocuments(data);
       } catch (error) {
         console.error("Error fetching parent documents:", error);
       } finally {
@@ -86,40 +78,23 @@ export default function CreateDocumentPage() {
       // Calculate path by lowercasing name and replacing spaces with hyphens
       const path = parentName.toLowerCase().replace(/\s+/g, "-") + "/";
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            document: {
-              name: parentName,
-              is_api_ref: isApiRef,
-              path: path,
-            },
-          }),
-        },
-      );
+      await documentsApi.createDocument({
+        name: parentName,
+        title: parentName,
+        is_api_ref: isApiRef,
+        path: path,
+      });
 
-      if (response.ok) {
-        // Invalidate cache to force refresh on documentation page
-        documentCache.invalidate("documents_all");
+      // Invalidate cache to force refresh on documentation page
+      invalidateDocumentCache();
 
-        // Show redirecting state
-        setIsRedirecting(true);
+      // Show redirecting state
+      setIsRedirecting(true);
 
-        // Wait 1.5 seconds before redirecting for smooth transition
-        setTimeout(() => {
-          router.push("/documentation");
-        }, 1500);
-      } else {
-        const errorData = await response.json();
-        alert(
-          `Error: ${errorData.detail || "Failed to create parent document"}`,
-        );
-      }
+      // Wait 1.5 seconds before redirecting for smooth transition
+      setTimeout(() => {
+        router.push("/documentation");
+      }, 1500);
     } catch (error) {
       console.error("Error creating parent document:", error);
       alert("Failed to create parent document. Please try again.");
@@ -149,47 +124,27 @@ export default function CreateDocumentPage() {
       path = parentPath ? `${parentPath}${path}/` : `${path}/`;
 
       const documentData = {
-        document: {
-          name: documentName,
-          title: documentTitle,
-          is_api_ref: documentIsApiRef,
-          parent_id: documentParentId || null,
-          path: path,
-        },
-        content: {
-          markdown_content: documentContent,
-          language: documentLanguage,
-        },
+        name: documentName,
+        title: documentTitle,
+        is_api_ref: documentIsApiRef,
+        parent_id: documentParentId || undefined,
+        path: path,
+        language: documentLanguage,
+        markdown_content: documentContent,
       };
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/documents`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(documentData),
-        },
-      );
+      await documentsApi.createDocument(documentData);
+      
+      // Invalidate cache to force refresh on documentation page
+      invalidateDocumentCache();
 
-      if (response.ok) {
-        // Invalidate cache to force refresh on documentation page
-        documentCache.invalidate("documents_all");
+      // Show redirecting state
+      setIsRedirecting(true);
 
-        // Show redirecting state
-        setIsRedirecting(true);
-
-        // Wait 1.5 seconds before redirecting for smooth transition
-        setTimeout(() => {
-          router.push("/documentation");
-        }, 1500);
-      } else {
-        const errorData = await response.json();
-        alert(
-          `Error creating document: ${errorData.detail || "Failed to create document"}`,
-        );
-      }
+      // Wait 1.5 seconds before redirecting for smooth transition
+      setTimeout(() => {
+        router.push("/documentation");
+      }, 1500);
     } catch (error) {
       console.error("Error creating document:", error);
       alert("Failed to create document. Please try again.");

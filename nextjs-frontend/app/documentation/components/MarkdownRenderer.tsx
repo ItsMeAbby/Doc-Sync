@@ -22,9 +22,10 @@ import {
 import { Clock, Trash2, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { DocumentNode } from "@/app/documentation/types";
+import { documentsApi } from "@/app/api/documents";
 import VersionHistoryModal from "./VersionHistoryModal";
 import EditModal from "@/components/EditModal";
-import { invalidateDocumentCache } from "@/app/utils/documentCache";
+import { invalidateDocumentCache } from "@/app/api/documents";
 
 interface MarkdownRendererProps {
   content: string;
@@ -58,24 +59,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     try {
       setIsDeleting(true);
 
-      const apiBaseUrl =
-        process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-      const response = await fetch(
-        `${apiBaseUrl}/api/documents/${document.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            is_deleted: true,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete document: ${response.statusText}`);
-      }
+      await documentsApi.updateDocument(document.id, { is_deleted: true });
 
       // Call the onDocumentDeleted callback to refresh the parent component
       onDocumentDeleted?.();

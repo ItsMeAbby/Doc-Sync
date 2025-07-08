@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { fetchDocumentsWithCache } from "@/app/utils/documentCache";
+import { fetchDocumentsWithCache } from "@/app/api/documents";
 
 interface DocumentOption {
   id: string;
@@ -48,9 +48,7 @@ export default function DocumentMentionInput({
   const loadDocuments = async () => {
     setLoading(true);
     try {
-      const data = await fetchDocumentsWithCache(
-        process.env.NEXT_PUBLIC_API_BASE_URL || "",
-      );
+      const data = await fetchDocumentsWithCache();
       const docs: DocumentOption[] = [];
 
       // Extract documents from all languages

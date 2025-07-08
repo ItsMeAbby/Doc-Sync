@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import * as Popover from "@radix-ui/react-popover";
 import { Save, X, Check, X as XIcon, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { editApi } from "@/app/api/edit";
 
 interface EditModalProps {
   isOpen: boolean;
@@ -107,24 +108,18 @@ export default function EditModal({ isOpen, onClose, content, onSave, documentId
     try {
       setIsLoadingInlineEdit(true);
       
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-      const response = await fetch(`${apiBaseUrl}/api/edit/inline_edit`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          selected_text: selection.selectedText,
-          query: query.trim(),
-        }),
+      const result = await editApi.getInlineEditSuggestion({
+        selected_text: selection.selectedText,
+        query: query.trim(),
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get inline edit suggestion: ${response.statusText}`);
-      }
-
-      const result: InlineEditResponse = await response.json();
-      setInlineEditResponse(result);
+      
+      // Convert API response to match local interface
+      setInlineEditResponse({
+        query: query.trim(),
+        original_text: selection.selectedText,
+        edited_text: result.suggestion,
+        message: result.explanation || "",
+      });
       
     } catch (error) {
       console.error("Error getting inline edit suggestion:", error);
