@@ -183,6 +183,11 @@ export default function DocumentationPage() {
         process.env.NEXT_PUBLIC_API_BASE_URL || "",
       );
       setDocuments(data);
+      
+      // Update selected document with fresh data if one is selected
+      if (selectedDocument) {
+        updateSelectedDocumentAfterRefresh(data, selectedDocument.id);
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
@@ -190,6 +195,40 @@ export default function DocumentationPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateSelectedDocumentAfterRefresh = (data: any, documentId: string) => {
+    const findDocument = (docs: any[]): any => {
+      for (const doc of docs) {
+        if (doc.id === documentId) {
+          return doc;
+        }
+        if (doc.children) {
+          const found = findDocument(doc.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    // Look for the document in the new data
+    const languageDocs = data[selectedLanguage];
+    if (languageDocs) {
+      const docsToSearch =
+        activeTab === "documentation"
+          ? languageDocs.documentation
+          : languageDocs.api_references;
+
+      const updatedDoc = findDocument(docsToSearch || []);
+      if (updatedDoc) {
+        setSelectedDocument(updatedDoc);
+      }
+    }
+  };
+
+  const handleDocumentUpdated = (documentId: string) => {
+    // This will be called after successful edit
+    console.log("Document updated:", documentId);
   };
 
   return (
@@ -375,6 +414,7 @@ export default function DocumentationPage() {
                   isLoading={loading}
                   document={selectedDocument}
                   onDocumentReverted={handleRefresh}
+                  onDocumentUpdated={handleDocumentUpdated}
                   onDocumentDeleted={() => {
                     // Clear the selected document and refresh
                     setSelectedDocument(null);

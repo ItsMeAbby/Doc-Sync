@@ -19,10 +19,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Clock, Trash2 } from "lucide-react";
+import { Clock, Trash2, Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { DocumentNode } from "@/app/documentation/types";
 import VersionHistoryModal from "./VersionHistoryModal";
+import EditModal from "@/components/EditModal";
+import { invalidateDocumentCache } from "@/app/utils/documentCache";
 
 interface MarkdownRendererProps {
   content: string;
@@ -32,6 +34,7 @@ interface MarkdownRendererProps {
   document?: DocumentNode;
   onDocumentReverted?: () => void;
   onDocumentDeleted?: () => void;
+  onDocumentUpdated?: (documentId: string) => void;
 }
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
@@ -42,9 +45,11 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   document,
   onDocumentReverted,
   onDocumentDeleted,
+  onDocumentUpdated,
 }) => {
   const router = useRouter();
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -80,6 +85,24 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleSaveContent = (newContent: string) => {
+    console.log("Content saved:", newContent);
+    // Content is now saved via the EditModal's API call
+  };
+
+  const handleDocumentEditUpdated = async () => {
+    // Invalidate the document cache first
+    invalidateDocumentCache();
+    
+    // Notify parent about specific document update
+    if (document?.id) {
+      onDocumentUpdated?.(document.id);
+    }
+    
+    // Refresh the parent component to show updated content
+    onDocumentReverted?.();
   };
   if (isLoading) {
     return (
@@ -128,6 +151,16 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         <div className="flex justify-end gap-2">
           {document && (
             <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditModalOpen(true)}
+                className="inline-flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Edit
+              </Button>
+
               <Button
                 variant="outline"
                 size="sm"
@@ -196,6 +229,16 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           {content}
         </ReactMarkdown>
       </div>
+
+      {/* Edit Modal */}
+      <EditModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        content={content}
+        onSave={handleSaveContent}
+        documentId={document?.id}
+        onDocumentUpdated={handleDocumentEditUpdated}
+      />
 
       {/* Version History Modal */}
       {document && (
